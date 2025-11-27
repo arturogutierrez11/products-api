@@ -10,36 +10,39 @@ export class GoogleSheetsConfigService implements IGoogleSheetsConfig {
   constructor(private readonly configService: ConfigService) {}
 
   getReadCredentials(): GoogleSheetsCredentials {
-    return this.getWriteCredentials(); // usan la misma
+    return this.loadCredentials();
   }
 
   getWriteCredentials(): GoogleSheetsCredentials {
-    const raw = this.getEnv('GOOGLE_WRITE_CREDENTIALS_BASE64');
-    const decoded = Buffer.from(raw, 'base64').toString('utf8');
-
-    const parsed = JSON.parse(decoded);
-
-    parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
-
-    return parsed;
+    return this.loadCredentials();
   }
 
-  private parseCredentials(envKey: string): GoogleSheetsCredentials {
-    const encoded = this.getEnv(envKey);
+  private loadCredentials(): GoogleSheetsCredentials {
+    const encoded = this.getEnv('GOOGLE_WRITE_CREDENTIALS_BASE64');
 
+    let decoded: string;
     try {
-      const json = Buffer.from(encoded, 'base64').toString('utf8');
-      return JSON.parse(json);
+      decoded = Buffer.from(encoded, 'base64').toString('utf8');
     } catch (error) {
-      console.error('Failed decoding Google credentials', error);
-      throw new Error(`Invalid Base64 JSON in ${envKey}`);
+      throw new Error('Invalid base64 in GOOGLE_WRITE_CREDENTIALS_BASE64');
     }
+
+    let credentials: GoogleSheetsCredentials;
+    try {
+      credentials = JSON.parse(decoded);
+    } catch (error) {
+      throw new Error('Invalid JSON in GOOGLE_WRITE_CREDENTIALS_BASE64');
+    }
+
+    credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+
+    return credentials;
   }
 
   private getEnv(key: string): string {
     const value = this.configService.get<string>(key);
     if (!value) {
-      throw new Error(`${key} environment variable is not set`);
+      throw new Error(`Missing environment variable: ${key}`);
     }
     return value;
   }

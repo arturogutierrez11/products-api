@@ -1,6 +1,6 @@
-export interface IMatchCategoriesrespoitory {
+export interface IMatchCategoriesRepository {
   write(rows: any[]): Promise<void>;
   clear(): Promise<void>;
   readAll(): Promise<any[]>;
-  updateRows(rows: { productId: number; data: any }[]): Promise<void>;
+  applyResults(rows: any[]): Promise<void>;
 }

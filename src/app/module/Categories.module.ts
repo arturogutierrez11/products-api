@@ -1,15 +1,22 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { CategoriesController } from '../controller/categorias/categories.controller';
 import { SyncCategoriesController } from '../controller/categorias/sync categories/syncCategories.controller';
+
+import { CategoriesService } from '../services/categories/CategoriesService';
+
 import { SQLProductRepository } from '../drivers/repositories/SQLQuerys/SQLProductRepository';
 import { SpreadSheetReader } from '../drivers/spreadsheets/SpreadSheetReader';
 import { SheetsMatchCategoriesRepository } from '../drivers/repositories/categories/SheetsMatchCategoriesRepository';
 import { OpenaiMatchCategoriesRepository } from '../../core/drivers/repositories/openai/OpenaiMatchCategoriesReository';
 import { VtexCategoriesRepository } from '../../core/drivers/repositories/vtex/categories/VtexCategoriesRepository';
 import { GoogleSheetsConfigService } from '../drivers/config/GoogleSheetsConfigService';
+
 import { MatchMadreToVtex } from '../../core/interactors/categories/MatchMadreToVtex';
 import { RetryMatchMadreToVtex } from '../../core/interactors/categories/RetryMatchMadreToVtex';
+import { SQLCategoriesRepository } from '../drivers/repositories/SQLQuerys/SQLCategoriesRepository';
 
 @Module({
   imports: [
@@ -25,23 +32,35 @@ import { RetryMatchMadreToVtex } from '../../core/interactors/categories/RetryMa
     }),
   ],
 
-  controllers: [SyncCategoriesController],
+  controllers: [
+    SyncCategoriesController,
+    CategoriesController, // OK
+  ],
 
   providers: [
+    CategoriesService, // 👈 FALTABA ESTO
+
     { provide: 'IGoogleSheetsConfig', useClass: GoogleSheetsConfigService },
     SpreadSheetReader,
 
     { provide: 'ISqlProductsRepository', useClass: SQLProductRepository },
     {
-      provide: 'IMatchCategoriesRepository',
+      provide: 'IMatchCategoriesrespoitory',
       useClass: SheetsMatchCategoriesRepository,
     },
+
+    { provide: SQLCategoriesRepository, useClass: SQLProductRepository },
+    { provide: SQLCategoriesRepository, useClass: SQLCategoriesRepository },
     {
       provide: 'IVtexCategoriesRepository',
       useClass: VtexCategoriesRepository,
     },
     { provide: 'IOpenAIRepository', useClass: OpenaiMatchCategoriesRepository },
 
+    {
+      provide: 'IMatchCategoriesRepository',
+      useClass: SheetsMatchCategoriesRepository,
+    },
     {
       provide: MatchMadreToVtex,
       useFactory: (vtex, openai, products, sheet) =>
@@ -58,7 +77,6 @@ import { RetryMatchMadreToVtex } from '../../core/interactors/categories/RetryMa
         'IMatchCategoriesRepository',
       ],
     },
-
     {
       provide: RetryMatchMadreToVtex,
       useFactory: (sheet, openai, vtex) =>

@@ -4,13 +4,13 @@ import {
   IOpenAIRepository,
   ClassifyResponse,
 } from 'src/core/adapters/repositories/openai/IOpenAIRepository';
-import { IMatchCategoriesrespoitory } from 'src/core/adapters/repositories/categories/IMatchCategoriesrespoitory';
+import { IMatchCategoriesRepository } from 'src/core/adapters/repositories/categories/IMatchCategoriesrespoitory';
 
 interface MatchMadreToVtexBuilder {
   categoriesVtexRepository: IVtexCategoriesRepository;
   openAiRepository: IOpenAIRepository;
   productsRepository: ISqlProductsRepository;
-  matchSheetRepository: IMatchCategoriesrespoitory;
+  matchSheetRepository: IMatchCategoriesRepository;
 }
 
 type VtexCategory = {
@@ -35,7 +35,7 @@ export class MatchMadreToVtex {
   private readonly categoriesVtexRepository: IVtexCategoriesRepository;
   private readonly openAiRepository: IOpenAIRepository;
   private readonly productsRepository: ISqlProductsRepository;
-  private readonly matchSheetRepository: IMatchCategoriesrespoitory;
+  private readonly matchSheetRepository: IMatchCategoriesRepository;
 
   constructor(builder: MatchMadreToVtexBuilder) {
     this.categoriesVtexRepository = builder.categoriesVtexRepository;

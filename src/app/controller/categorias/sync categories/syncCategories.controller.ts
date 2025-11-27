@@ -27,7 +27,7 @@ export class SyncCategoriesController {
 
   @Post('sync/retry')
   async retry(@Query('limit') limit: number = 100) {
-    this.retryMatcher.run(limit);
+    await this.retryMatcher.run(limit);
 
     return {
       status: 'processing',

@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { SpreadSheetReader } from '../../spreadsheets/SpreadSheetReader';
-import { IMatchCategoriesrespoitory } from 'src/core/adapters/repositories/categories/IMatchCategoriesrespoitory';
+import { IMatchCategoriesRepository } from 'src/core/adapters/repositories/categories/IMatchCategoriesrespoitory';
 
 @Injectable()
 export class SheetsMatchCategoriesRepository
-  implements IMatchCategoriesrespoitory
+  implements IMatchCategoriesRepository
 {
   private readonly sheetId = process.env.SHEET_MADRE_CATEGORIAS_ID;
   private readonly sheetName = process.env.SHEET_MADRE_CATEGORIAS_NAME;
 
-  constructor(private readonly sheetReader: SpreadSheetReader) {}
+  constructor(private readonly sheetReader: SpreadSheetReader) {
+    console.log('📌 SheetsMatchCategoriesRepository CONSTRUCTOR RUNNING');
+  }
 
   private validateConfig() {
     if (!this.sheetId || !this.sheetName) {
@@ -31,20 +33,34 @@ export class SheetsMatchCategoriesRepository
 
     await this.sheetReader.write(this.sheetId!, this.sheetName!, updated);
   }
-
-  async updateRows(updatedRows: any[]): Promise<void> {
+  async applyResults(rows: any[]): Promise<void> {
     this.validateConfig();
+
+    console.log(`🔄 Updating existing sheet rows...`);
 
     const sheetRows = await this.readAll();
 
-    const rewritten = sheetRows.map((existing) => {
-      const updated = updatedRows.find(
-        (r) => r.productId === existing.productId,
+    const updated = sheetRows.map((row) => {
+      const match = rows.find(
+        (r) => String(r.productId) === String(row.productId),
       );
-      return updated ? { ...existing, ...updated } : existing;
+
+      if (!match) return row;
+
+      return {
+        ...row,
+        matchedCategory: match.matchedCategory,
+        matchedCategoryId: match.matchedCategoryId,
+        matchedCategoryPath: match.matchedCategoryPath,
+        confidence: match.confidence,
+        status: match.confidence >= 0.7 ? 'AUTO_MATCHED' : 'RETRY',
+        processedAt: match.processedAt,
+      };
     });
 
-    await this.sheetReader.write(this.sheetId!, this.sheetName!, rewritten);
+    await this.sheetReader.write(this.sheetId!, this.sheetName!, updated);
+
+    console.log(`✅ Sheet updated successfully.`);
   }
 
   async clear(): Promise<void> {
