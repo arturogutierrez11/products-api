@@ -4,12 +4,8 @@ import { CategoriesModule } from './app/module/Categories.module';
 async function bootstrap() {
   const app = await NestFactory.create(CategoriesModule);
 
-  app.enableCors();
+  await app.listen(3300); // puerto dedicado para este servicio
 
-  const PORT = process.env.PORT ?? 3001;
-
-  await app.listen(PORT, '0.0.0.0');
-  console.log(`🚀 Categories service running on http://0.0.0.0:${PORT}`);
+  console.log('Categories classification service running on port 3300 🚀');
 }
-
 bootstrap();
