@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SyncCategoriesController } from '../controller/categorias/sync categories/syncCategories.controller';
-import { MatchMadreToVtex } from '../../core/interactors/categories/MatchMadreToVtex';
 import { SQLProductRepository } from '../drivers/repositories/SQLQuerys/SQLProductRepository';
 import { SpreadSheetReader } from '../drivers/spreadsheets/SpreadSheetReader';
 import { SheetsMatchCategoriesRepository } from '../drivers/repositories/categories/SheetsMatchCategoriesRepository';
 import { OpenaiMatchCategoriesRepository } from '../../core/drivers/repositories/openai/OpenaiMatchCategoriesReository';
 import { VtexCategoriesRepository } from '../../core/drivers/repositories/vtex/categories/VtexCategoriesRepository';
 import { GoogleSheetsConfigService } from '../drivers/config/GoogleSheetsConfigService';
+import { MatchMadreToVtex } from '../../core/interactors/categories/MatchMadreToVtex';
+import { RetryMatchMadreToVtex } from '../../core/interactors/categories/RetryMatchMadreToVtex';
 
 @Module({
   imports: [
@@ -21,23 +22,16 @@ import { GoogleSheetsConfigService } from '../drivers/config/GoogleSheetsConfigS
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       synchronize: false,
-      autoLoadEntities: false,
     }),
   ],
 
   controllers: [SyncCategoriesController],
 
   providers: [
-    {
-      provide: 'IGoogleSheetsConfig',
-      useClass: GoogleSheetsConfigService,
-    },
+    { provide: 'IGoogleSheetsConfig', useClass: GoogleSheetsConfigService },
     SpreadSheetReader,
 
-    {
-      provide: 'ISqlProductsRepository',
-      useClass: SQLProductRepository,
-    },
+    { provide: 'ISqlProductsRepository', useClass: SQLProductRepository },
     {
       provide: 'IMatchCategoriesRepository',
       useClass: SheetsMatchCategoriesRepository,
@@ -46,26 +40,17 @@ import { GoogleSheetsConfigService } from '../drivers/config/GoogleSheetsConfigS
       provide: 'IVtexCategoriesRepository',
       useClass: VtexCategoriesRepository,
     },
-    {
-      provide: 'IOpenAIRepository',
-      useClass: OpenaiMatchCategoriesRepository,
-    },
+    { provide: 'IOpenAIRepository', useClass: OpenaiMatchCategoriesRepository },
 
     {
       provide: MatchMadreToVtex,
-      useFactory: (
-        vtex: VtexCategoriesRepository,
-        openai: OpenaiMatchCategoriesRepository,
-        products: SQLProductRepository,
-        sheet: SheetsMatchCategoriesRepository,
-      ) =>
+      useFactory: (vtex, openai, products, sheet) =>
         new MatchMadreToVtex({
           categoriesVtexRepository: vtex,
           openAiRepository: openai,
           productsRepository: products,
           matchSheetRepository: sheet,
         }),
-
       inject: [
         'IVtexCategoriesRepository',
         'IOpenAIRepository',
@@ -73,8 +58,17 @@ import { GoogleSheetsConfigService } from '../drivers/config/GoogleSheetsConfigS
         'IMatchCategoriesRepository',
       ],
     },
-  ],
 
-  exports: [],
+    {
+      provide: RetryMatchMadreToVtex,
+      useFactory: (sheet, openai, vtex) =>
+        new RetryMatchMadreToVtex(sheet, openai, vtex),
+      inject: [
+        'IMatchCategoriesRepository',
+        'IOpenAIRepository',
+        'IVtexCategoriesRepository',
+      ],
+    },
+  ],
 })
 export class CategoriesModule {}

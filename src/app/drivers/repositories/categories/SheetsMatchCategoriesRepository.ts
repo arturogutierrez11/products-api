@@ -13,30 +13,38 @@ export class SheetsMatchCategoriesRepository
 
   private validateConfig() {
     if (!this.sheetId || !this.sheetName) {
-      throw new Error(
-        `Missing Google Sheet config: SHEET_MADRE_CATEGORIAS_ID or SHEET_MADRE_CATEGORIAS_NAME`,
-      );
+      throw new Error(`Missing Google Sheet config`);
     }
+  }
+
+  async readAll(): Promise<any[]> {
+    this.validateConfig();
+    return this.sheetReader.readAsObject(this.sheetId!, this.sheetName!);
   }
 
   async write(rows: any[]): Promise<void> {
     this.validateConfig();
+    if (!rows?.length) return;
 
-    if (!rows || rows.length === 0) {
-      return;
-    }
+    const existing = await this.readAll();
+    const updated = [...existing, ...rows];
 
-    // 1️⃣ Leer lo existente
-    const existingRows = await this.sheetReader.readAsObject(
-      this.sheetId!,
-      this.sheetName!,
-    );
+    await this.sheetReader.write(this.sheetId!, this.sheetName!, updated);
+  }
 
-    // 2️⃣ Concatenar nuevo + existente
-    const updatedRows = [...existingRows, ...rows];
+  async updateRows(updatedRows: any[]): Promise<void> {
+    this.validateConfig();
 
-    // 3️⃣ Reescribir todo ya acumulado
-    await this.sheetReader.write(this.sheetId!, this.sheetName!, updatedRows);
+    const sheetRows = await this.readAll();
+
+    const rewritten = sheetRows.map((existing) => {
+      const updated = updatedRows.find(
+        (r) => r.productId === existing.productId,
+      );
+      return updated ? { ...existing, ...updated } : existing;
+    });
+
+    await this.sheetReader.write(this.sheetId!, this.sheetName!, rewritten);
   }
 
   async clear(): Promise<void> {

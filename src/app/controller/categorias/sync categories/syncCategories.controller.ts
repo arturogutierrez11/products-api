@@ -1,9 +1,13 @@
 import { Controller, Post, Query } from '@nestjs/common';
 import { MatchMadreToVtex } from 'src/core/interactors/categories/MatchMadreToVtex';
+import { RetryMatchMadreToVtex } from 'src/core/interactors/categories/RetryMatchMadreToVtex';
 
 @Controller('api/categories')
 export class SyncCategoriesController {
-  constructor(private readonly matcher: MatchMadreToVtex) {}
+  constructor(
+    private readonly matcher: MatchMadreToVtex,
+    private readonly retryMatcher: RetryMatchMadreToVtex,
+  ) {}
 
   @Post('sync')
   async run(
@@ -13,10 +17,23 @@ export class SyncCategoriesController {
     this.matcher.run(limit, offset);
 
     return {
-      status: 'processing started',
+      status: 'processing',
+      type: 'initial_match',
       batchSize: limit,
-      startOffset: offset,
-      message: 'AI classification started — check logs or Sheet for status.',
+      offset,
+      message: 'Categorization started — check logs or Sheets.',
+    };
+  }
+
+  @Post('sync/retry')
+  async retry(@Query('limit') limit: number = 100) {
+    this.retryMatcher.run(limit);
+
+    return {
+      status: 'processing',
+      type: 'retry_match',
+      retryBatchSize: limit,
+      message: 'Retry process started — check logs or Sheets.',
     };
   }
 }
