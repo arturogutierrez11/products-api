@@ -13,12 +13,16 @@ export class VtexCategoriesRepository implements IVtexCategoriesRepository {
   private readonly appToken = process.env.VTEX_APP_TOKEN!;
 
   async getTree(): Promise<VTEXCategoryTree[]> {
+    // Try cache first
     const cached = await this.cache.get(this.cacheKey);
 
-    if (cached) {
+    if (cached && Array.isArray(cached) && cached.length > 0) {
       console.log('📦 VTEX categories loaded from cache');
       return cached;
     }
+
+    // No valid cache → call API
+    console.log('🌍 Fetching VTEX categories from API...');
 
     const url = `https://${this.account}.vtexcommercestable.com.br/api/catalog_system/pvt/category/tree/125`;
 
@@ -32,7 +36,10 @@ export class VtexCategoriesRepository implements IVtexCategoriesRepository {
 
     const cleaned = this.cleanTree(data);
 
-    await this.cache.save(this.cacheKey, cleaned, 1000 * 60 * 60 * 12);
+    // Save cleaned structure to cache with TTL
+    await this.cache.save(this.cacheKey, cleaned, 1000 * 60 * 60 * 12); // 12h
+
+    console.log('💾 VTEX categories cached');
 
     return cleaned;
   }

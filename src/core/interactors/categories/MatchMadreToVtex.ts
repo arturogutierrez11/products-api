@@ -65,7 +65,7 @@ export class MatchMadreToVtex {
     );
 
     // Buffer to avoid rate limits
-    const flushSize = 50;
+    const flushSize = 100;
     let buffer: MatchRow[] = [];
 
     let currentOffset = offset;
