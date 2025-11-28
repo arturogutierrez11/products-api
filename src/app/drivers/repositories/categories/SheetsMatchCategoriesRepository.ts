@@ -26,11 +26,48 @@ export class SheetsMatchCategoriesRepository
     this.validateConfig();
     if (!rows?.length) return;
 
-    const existing = await this.readAll();
-    const updated = [...existing, ...rows];
+    const maxRetries = 5;
+    let attempt = 0;
 
-    await this.sheetReader.write(this.sheetId!, this.sheetName!, updated);
+    while (attempt < maxRetries) {
+      try {
+        console.log(
+          `📝 Writing ${rows.length} rows to Google Sheets (attempt ${
+            attempt + 1
+          }/${maxRetries})...`,
+        );
+
+        await this.sheetReader.append(this.sheetId!, this.sheetName!, rows);
+
+        console.log(`✅ Write successful.`);
+        return;
+      } catch (error: any) {
+        attempt++;
+
+        const isTimeout =
+          error?.name === 'TimeoutError' ||
+          error?.message?.toLowerCase().includes('timeout') ||
+          error?.message?.toLowerCase().includes('503') ||
+          error?.message?.toLowerCase().includes('rate') ||
+          error?.message?.toLowerCase().includes('limit');
+
+        if (attempt >= maxRetries) {
+          console.log('❌ Max retries reached. Giving up.');
+          throw error;
+        }
+
+        const waitMs = attempt * 2000 + Math.random() * 400;
+        console.log(
+          `⚠️ Sheets write failed (${
+            isTimeout ? 'timeout' : 'error'
+          }). Retrying in ${waitMs.toFixed(0)} ms`,
+        );
+
+        await new Promise((res) => setTimeout(res, waitMs));
+      }
+    }
   }
+
   async applyResults(rows: any[]): Promise<void> {
     this.validateConfig();
 
@@ -55,6 +92,8 @@ export class SheetsMatchCategoriesRepository
         processedAt: match.processedAt,
       };
     });
+
+    console.log(`📝 Saving updated rows...`);
 
     await this.sheetReader.write(this.sheetId!, this.sheetName!, updated);
 

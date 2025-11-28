@@ -155,4 +155,33 @@ export class SpreadSheetReader {
     await sheet.clearRows();
     await sheet.addRows(cleanedData);
   }
+  async append(spreadSheetId: string, sheetTitle: string, rows: any[]) {
+    const doc = await this.loadWriteDocument(spreadSheetId);
+    const sheet = doc.sheetsByTitle[sheetTitle];
+
+    if (!rows?.length) return;
+
+    let headers: string[] = [];
+
+    try {
+      headers = sheet.headerValues;
+    } catch (_) {}
+
+    if (!headers || headers.length === 0) {
+      await sheet.setHeaderRow(Object.keys(rows[0]));
+      headers = sheet.headerValues;
+    }
+
+    const formatted = rows.map((row) =>
+      headers.reduce(
+        (obj, h) => {
+          obj[h] = row[h] ?? '';
+          return obj;
+        },
+        {} as Record<string, any>,
+      ),
+    );
+
+    await sheet.addRows(formatted);
+  }
 }
