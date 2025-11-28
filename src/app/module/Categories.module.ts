@@ -1,22 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { CategoriesController } from '../controller/categorias/categories.controller';
 import { SyncCategoriesController } from '../controller/categorias/sync categories/syncCategories.controller';
-
 import { CategoriesService } from '../services/categories/CategoriesService';
-
 import { SQLProductRepository } from '../drivers/repositories/SQLQuerys/SQLProductRepository';
 import { SpreadSheetReader } from '../drivers/spreadsheets/SpreadSheetReader';
 import { SheetsMatchCategoriesRepository } from '../drivers/repositories/categories/SheetsMatchCategoriesRepository';
 import { OpenaiMatchCategoriesRepository } from '../../core/drivers/repositories/openai/OpenaiMatchCategoriesReository';
 import { VtexCategoriesRepository } from '../../core/drivers/repositories/vtex/categories/VtexCategoriesRepository';
 import { GoogleSheetsConfigService } from '../drivers/config/GoogleSheetsConfigService';
-
 import { MatchMadreToVtex } from '../../core/interactors/categories/MatchMadreToVtex';
 import { RetryMatchMadreToVtex } from '../../core/interactors/categories/RetryMatchMadreToVtex';
 import { SQLCategoriesRepository } from '../drivers/repositories/SQLQuerys/SQLCategoriesRepository';
+import { InMemoryCacheManager } from 'src/core/drivers/cache/InMemoryCacheManager';
 
 @Module({
   imports: [
@@ -32,13 +29,11 @@ import { SQLCategoriesRepository } from '../drivers/repositories/SQLQuerys/SQLCa
     }),
   ],
 
-  controllers: [
-    SyncCategoriesController,
-    CategoriesController, // OK
-  ],
+  controllers: [SyncCategoriesController, CategoriesController],
 
   providers: [
-    CategoriesService, // 👈 FALTABA ESTO
+    CategoriesService,
+    InMemoryCacheManager,
 
     { provide: 'IGoogleSheetsConfig', useClass: GoogleSheetsConfigService },
     SpreadSheetReader,
@@ -53,8 +48,11 @@ import { SQLCategoriesRepository } from '../drivers/repositories/SQLQuerys/SQLCa
     { provide: SQLCategoriesRepository, useClass: SQLCategoriesRepository },
     {
       provide: 'IVtexCategoriesRepository',
-      useClass: VtexCategoriesRepository,
+      useFactory: (cache: InMemoryCacheManager) =>
+        new VtexCategoriesRepository(cache),
+      inject: [InMemoryCacheManager],
     },
+
     { provide: 'IOpenAIRepository', useClass: OpenaiMatchCategoriesRepository },
 
     {

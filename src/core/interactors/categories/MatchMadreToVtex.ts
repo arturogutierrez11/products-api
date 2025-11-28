@@ -44,16 +44,24 @@ export class MatchMadreToVtex {
     this.matchSheetRepository = builder.matchSheetRepository;
   }
 
-  async run(batchSize = 200, startOffset = 0) {
-    console.log(
-      `\n🚀 Starting categorization of products using AI + VTEX mapping...`,
-    );
+  async run(batchSize = 200, manualOffset?: number) {
+    console.log(`\n🚀 Starting categorization of products...`);
 
-    // Obtener categorías una sola vez
+    // 1) Detect offset
+    let offset = manualOffset;
+
+    if (offset === undefined || offset === null) {
+      const existingRows = await this.matchSheetRepository.readAll();
+      offset = existingRows.length;
+      console.log(`📌 Continuing from last processed row: offset=${offset}`);
+    } else {
+      console.log(`📌 Using manual offset: ${offset}`);
+    }
+
+    // 2) Fetch VTEX categories once
     const rawTree = await this.categoriesVtexRepository.getTree();
     const vtexCategories = this.flattenCategories(rawTree);
 
-    // Índices rápidos
     const byFullPath = new Map(
       vtexCategories.map((c) => [c.fullPath.toLowerCase(), c]),
     );
@@ -62,10 +70,9 @@ export class MatchMadreToVtex {
     );
     const byId = new Map(vtexCategories.map((c) => [String(c.id), c]));
 
-    let offset = startOffset;
-
     while (true) {
       console.log(`📍 Fetching products at offset=${offset}`);
+      offset = Number(offset ?? 0);
 
       const { items, hasNext, nextOffset, total } =
         await this.productsRepository.findPaginated(batchSize, offset);
@@ -77,7 +84,6 @@ export class MatchMadreToVtex {
 
       console.log(`📦 Processing ${items.length}/${total}`);
 
-      // 🧠 OpenAI batch con fallback
       const result: ClassifyResponse =
         (await this.openAiRepository.classifyBatch({
           products: items,
@@ -119,11 +125,9 @@ export class MatchMadreToVtex {
 
         let matched: VtexCategory | null = null;
 
-        // Intentar match por ID
         if (matchedCategoryId)
           matched = byId.get(String(matchedCategoryId)) ?? null;
 
-        // Intentar match por nombre o fullpath
         if (!matched && matchedCategoryName) {
           const normalized = matchedCategoryName.toLowerCase().trim();
           matched =
@@ -146,19 +150,19 @@ export class MatchMadreToVtex {
         });
       }
 
-      console.log(`📝 Writing ${rowsToWrite.length} rows to Google Sheets...`);
+      console.log(`📝 Writing ${rowsToWrite.length} new rows...`);
       await this.matchSheetRepository.write(rowsToWrite);
 
       if (!hasNext) {
-        console.log(`🎉 Completed processing all ${total} products.`);
+        console.log(`🎉 All ${total} products processed.`);
         break;
       }
 
       offset = nextOffset;
-      console.log(`⏭ Moving to next batch...\n`);
+      console.log(`⏭ Next batch... (offset=${offset})`);
     }
 
-    console.log(`\n🏁 DONE! Categorization completed.`);
+    console.log(`🏁 DONE — Categorization finished.`);
   }
 
   private flattenCategories(tree: any[], parentPath = ''): VtexCategory[] {

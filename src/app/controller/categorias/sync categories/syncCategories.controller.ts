@@ -12,7 +12,7 @@ export class SyncCategoriesController {
   @Post('sync')
   async run(
     @Query('limit') limit: number = 200,
-    @Query('offset') offset: number = 0,
+    @Query('offset') offset?: number,
   ) {
     this.matcher.run(limit, offset);
 

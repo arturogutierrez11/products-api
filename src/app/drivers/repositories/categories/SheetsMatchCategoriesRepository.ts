@@ -9,9 +9,7 @@ export class SheetsMatchCategoriesRepository
   private readonly sheetId = process.env.SHEET_MADRE_CATEGORIAS_ID;
   private readonly sheetName = process.env.SHEET_MADRE_CATEGORIAS_NAME;
 
-  constructor(private readonly sheetReader: SpreadSheetReader) {
-    console.log('📌 SheetsMatchCategoriesRepository CONSTRUCTOR RUNNING');
-  }
+  constructor(private readonly sheetReader: SpreadSheetReader) {}
 
   private validateConfig() {
     if (!this.sheetId || !this.sheetName) {
