@@ -47,35 +47,34 @@ export class MatchMadreToVtex {
   async run(batchSize = 200, manualOffset?: number) {
     console.log(`\n🚀 Starting categorization of products...`);
 
-    // 1) Detect offset
-    let offset = manualOffset;
+    // Detect offset (resume last progress)
+    const savedRows = await this.matchSheetRepository.readAll();
+    const offset = manualOffset ?? savedRows.length;
+    console.log(`📌 Starting at offset=${offset}`);
 
-    if (offset === undefined || offset === null) {
-      const existingRows = await this.matchSheetRepository.readAll();
-      offset = existingRows.length;
-      console.log(`📌 Continuing from last processed row: offset=${offset}`);
-    } else {
-      console.log(`📌 Using manual offset: ${offset}`);
-    }
-
-    // 2) Fetch VTEX categories once
+    // Cache VTEX categories in memory (1 API call)
     const rawTree = await this.categoriesVtexRepository.getTree();
     const vtexCategories = this.flattenCategories(rawTree);
 
-    const byFullPath = new Map(
-      vtexCategories.map((c) => [c.fullPath.toLowerCase(), c]),
-    );
-    const byName = new Map(
+    const cacheById = new Map(vtexCategories.map((c) => [String(c.id), c]));
+    const cacheByName = new Map(
       vtexCategories.map((c) => [c.name.toLowerCase(), c]),
     );
-    const byId = new Map(vtexCategories.map((c) => [String(c.id), c]));
+    const cacheByFull = new Map(
+      vtexCategories.map((c) => [c.fullPath.toLowerCase(), c]),
+    );
+
+    // Buffer to avoid rate limits
+    const flushSize = 50;
+    let buffer: MatchRow[] = [];
+
+    let currentOffset = offset;
 
     while (true) {
-      console.log(`📍 Fetching products at offset=${offset}`);
-      offset = Number(offset ?? 0);
+      console.log(`📍 Fetching products at offset=${currentOffset}`);
 
       const { items, hasNext, nextOffset, total } =
-        await this.productsRepository.findPaginated(batchSize, offset);
+        await this.productsRepository.findPaginated(batchSize, currentOffset);
 
       if (!items.length) {
         console.log(`🏁 No more products to process.`);
@@ -84,82 +83,65 @@ export class MatchMadreToVtex {
 
       console.log(`📦 Processing ${items.length}/${total}`);
 
-      const result: ClassifyResponse =
+      const aiResult: ClassifyResponse =
         (await this.openAiRepository.classifyBatch({
           products: items,
           vtexCategories,
         })) ?? { results: [] };
 
-      const rowsToWrite: MatchRow[] = [];
+      for (let product of items) {
+        const match =
+          aiResult.results?.find((r) => r.productId === product.id) ?? null;
 
-      for (let i = 0; i < items.length; i++) {
-        const product = items[i];
+        let matchedCategory: VtexCategory | null = null;
 
-        const classification =
-          result?.results?.find(
-            (r) => r.productId === product.id && r.sku === product.sku,
-          ) ??
-          result?.results?.[i] ??
-          null;
-
-        if (!classification) {
-          rowsToWrite.push({
-            productId: product.id,
-            sku: product.sku,
-            title: product.title,
-            matchedCategory: '',
-            matchedCategoryId: null,
-            matchedCategoryPath: null,
-            confidence: 0,
-            status: 'RETRY',
-            processedAt: new Date().toISOString(),
-          });
-          continue;
+        if (match?.matchedCategoryId) {
+          matchedCategory =
+            cacheById.get(String(match.matchedCategoryId)) ?? null;
         }
 
-        const {
-          matchedCategoryId,
-          matchedCategoryName,
-          confidence = 0,
-        } = classification;
-
-        let matched: VtexCategory | null = null;
-
-        if (matchedCategoryId)
-          matched = byId.get(String(matchedCategoryId)) ?? null;
-
-        if (!matched && matchedCategoryName) {
-          const normalized = matchedCategoryName.toLowerCase().trim();
-          matched =
-            byFullPath.get(normalized) || byName.get(normalized) || null;
+        if (!matchedCategory && match?.matchedCategoryName) {
+          const normalized = match.matchedCategoryName.toLowerCase().trim();
+          matchedCategory =
+            cacheByFull.get(normalized) || cacheByName.get(normalized) || null;
         }
 
-        const status: MatchRow['status'] =
-          confidence >= 0.6 && matched ? 'AUTO_MATCHED' : 'REVIEW';
+        const confidence = match?.confidence ?? 0;
 
-        rowsToWrite.push({
+        const row: MatchRow = {
           productId: product.id,
           sku: product.sku,
           title: product.title,
-          matchedCategory: matchedCategoryName ?? '',
-          matchedCategoryId: matched?.id ?? null,
-          matchedCategoryPath: matched?.fullPath ?? null,
+          matchedCategory: match?.matchedCategoryName ?? '',
+          matchedCategoryId: matchedCategory?.id ?? null,
+          matchedCategoryPath: matchedCategory?.fullPath ?? null,
           confidence,
-          status,
+          status:
+            confidence >= 0.6 && matchedCategory ? 'AUTO_MATCHED' : 'REVIEW',
           processedAt: new Date().toISOString(),
-        });
+        };
+
+        buffer.push(row);
+
+        // Write batch to sheets
+        if (buffer.length >= flushSize) {
+          console.log(`📝 Writing ${buffer.length} rows to Google Sheets...`);
+          await this.matchSheetRepository.write(buffer);
+          buffer = [];
+          await new Promise((r) => setTimeout(r, 1000)); // prevent rate limit
+        }
       }
 
-      console.log(`📝 Writing ${rowsToWrite.length} new rows...`);
-      await this.matchSheetRepository.write(rowsToWrite);
+      if (!hasNext) break;
 
-      if (!hasNext) {
-        console.log(`🎉 All ${total} products processed.`);
-        break;
-      }
+      currentOffset = nextOffset;
+      console.log(`⏭ Moving to next batch → offset=${currentOffset}`);
+    }
 
-      offset = nextOffset;
-      console.log(`⏭ Next batch... (offset=${offset})`);
+    // Final flush
+    if (buffer.length > 0) {
+      console.log(`📝 Final write of ${buffer.length} rows...`);
+      await this.matchSheetRepository.write(buffer);
     }
 
     console.log(`🏁 DONE — Categorization finished.`);
