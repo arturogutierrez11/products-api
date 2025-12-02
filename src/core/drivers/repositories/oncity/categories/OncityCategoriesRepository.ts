@@ -1,28 +1,26 @@
 import axios from 'axios';
-import { IVtexCategoriesRepository } from 'src/core/adapters/repositories/vtex/categories/IVtexCategoriesRepository';
-import { VTEXCategoryTree } from 'src/core/entities/VTEXCategory';
+import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/oncity/categories/IOncityCategoriesRepository';
+import { OncityCategory } from 'src/core/entities/oncity/categories/OncityCategory';
 import { ICacheManager } from '../../../../adapters/cache/ICacheManager';
 
-export class VtexCategoriesRepository implements IVtexCategoriesRepository {
-  private readonly cacheKey = 'vtex_categories';
+export class OncityCategoriesRepository implements IOncityCategoriesRepository {
+  private readonly cacheKey = 'oncity_categories';
 
   constructor(private cache: ICacheManager) {}
 
-  private readonly account = process.env.VTEX_ACCOUNT!;
-  private readonly appKey = process.env.VTEX_APP_KEY!;
-  private readonly appToken = process.env.VTEX_APP_TOKEN!;
+  private readonly account = process.env.ONCITY_ACCOUNT!;
+  private readonly appKey = process.env.ONCITY_APP_KEY!;
+  private readonly appToken = process.env.ONCITY_APP_TOKEN!;
 
-  async getTree(): Promise<VTEXCategoryTree[]> {
-    // Try cache first
+  async getTree(): Promise<OncityCategory[]> {
     const cached = await this.cache.get(this.cacheKey);
 
     if (cached && Array.isArray(cached) && cached.length > 0) {
-      console.log('📦 VTEX categories loaded from cache');
+      console.log('📦 Oncity categories loaded from cache');
       return cached;
     }
 
-    // No valid cache → call API
-    console.log('🌍 Fetching VTEX categories from API...');
+    console.log('🌍 Fetching Oncity categories from API...');
 
     const url = `https://${this.account}.vtexcommercestable.com.br/api/catalog_system/pvt/category/tree/125`;
 
@@ -36,15 +34,14 @@ export class VtexCategoriesRepository implements IVtexCategoriesRepository {
 
     const cleaned = this.cleanTree(data);
 
-    // Save cleaned structure to cache with TTL
     await this.cache.save(this.cacheKey, cleaned, 1000 * 60 * 60 * 12); // 12h
 
-    console.log('💾 VTEX categories cached');
+    console.log('💾 On city categories cached');
 
     return cleaned;
   }
 
-  private cleanTree(nodes: any[]): VTEXCategoryTree[] {
+  private cleanTree(nodes: any[]): OncityCategory[] {
     return nodes.map((node) => ({
       id: node.id,
       name: node.name,

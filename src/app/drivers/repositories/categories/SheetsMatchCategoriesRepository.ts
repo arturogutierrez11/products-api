@@ -7,101 +7,49 @@ export class SheetsMatchCategoriesRepository
   implements IMatchCategoriesRepository
 {
   private readonly sheetId = process.env.SHEET_MADRE_CATEGORIAS_ID;
-  private readonly sheetName = process.env.SHEET_MADRE_CATEGORIAS_NAME;
 
   constructor(private readonly sheetReader: SpreadSheetReader) {}
 
-  private validateConfig() {
-    if (!this.sheetId || !this.sheetName) {
-      throw new Error(`Missing Google Sheet config`);
+  private validateConfig(sheetName: string) {
+    if (!this.sheetId || !sheetName) {
+      throw new Error(`Missing Google Sheet config — SheetId or SheetName`);
     }
   }
 
-  async readAll(): Promise<any[]> {
-    this.validateConfig();
-    return this.sheetReader.readAsObject(this.sheetId!, this.sheetName!);
+  async readAll(sheetName: string): Promise<any[]> {
+    return this.sheetReader.readAsObject(this.sheetId!, sheetName);
   }
 
-  async write(rows: any[]): Promise<void> {
-    this.validateConfig();
+  async write(sheetName: string, rows: any[]): Promise<void> {
     if (!rows?.length) return;
 
-    const maxRetries = 5;
-    let attempt = 0;
-
-    while (attempt < maxRetries) {
-      try {
-        console.log(
-          `📝 Writing ${rows.length} rows to Google Sheets (attempt ${
-            attempt + 1
-          }/${maxRetries})...`,
-        );
-
-        await this.sheetReader.append(this.sheetId!, this.sheetName!, rows);
-
-        console.log(`✅ Write successful.`);
-        return;
-      } catch (error: any) {
-        attempt++;
-
-        const isTimeout =
-          error?.name === 'TimeoutError' ||
-          error?.message?.toLowerCase().includes('timeout') ||
-          error?.message?.toLowerCase().includes('503') ||
-          error?.message?.toLowerCase().includes('rate') ||
-          error?.message?.toLowerCase().includes('limit');
-
-        if (attempt >= maxRetries) {
-          console.log('❌ Max retries reached. Giving up.');
-          throw error;
-        }
-
-        const waitMs = attempt * 2000 + Math.random() * 400;
-        console.log(
-          `⚠️ Sheets write failed (${
-            isTimeout ? 'timeout' : 'error'
-          }). Retrying in ${waitMs.toFixed(0)} ms`,
-        );
-
-        await new Promise((res) => setTimeout(res, waitMs));
-      }
-    }
+    await this.sheetReader.append(this.sheetId!, sheetName, rows);
   }
 
-  async applyResults(rows: any[]): Promise<void> {
-    this.validateConfig();
+  async applyResults(sheetName: string, rows: any[]): Promise<void> {
+    this.validateConfig(sheetName);
+    if (!rows.length) return;
 
-    console.log(`🔄 Updating existing sheet rows...`);
+    const sheetRows = await this.readAll(sheetName);
 
-    const sheetRows = await this.readAll();
-
-    const updated = sheetRows.map((row) => {
+    const updatedRows = sheetRows.map((existing) => {
       const match = rows.find(
-        (r) => String(r.productId) === String(row.productId),
+        (r) => String(r.productId) === String(existing.productId),
       );
-
-      if (!match) return row;
-
-      return {
-        ...row,
-        matchedCategory: match.matchedCategory,
-        matchedCategoryId: match.matchedCategoryId,
-        matchedCategoryPath: match.matchedCategoryPath,
-        confidence: match.confidence,
-        status: match.confidence >= 0.7 ? 'AUTO_MATCHED' : 'RETRY',
-        processedAt: match.processedAt,
-      };
+      return match ? { ...existing, ...match } : existing;
     });
 
-    console.log(`📝 Saving updated rows...`);
+    const sorted = updatedRows.sort((a, b) => a._rowIndex - b._rowIndex);
+    const cleanRows = sorted.map(({ _rowIndex, ...rest }) => rest);
 
-    await this.sheetReader.write(this.sheetId!, this.sheetName!, updated);
-
-    console.log(`✅ Sheet updated successfully.`);
+    await this.sheetReader.batchUpdateValues(
+      this.sheetId!,
+      sheetName,
+      cleanRows,
+    );
   }
 
-  async clear(): Promise<void> {
-    this.validateConfig();
-    await this.sheetReader.write(this.sheetId!, this.sheetName!, []);
+  async clear(sheetName: string): Promise<void> {
+    await this.sheetReader.write(this.sheetId!, sheetName, []);
   }
 }

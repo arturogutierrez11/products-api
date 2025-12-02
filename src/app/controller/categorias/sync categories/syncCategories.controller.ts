@@ -1,39 +1,106 @@
-import { Controller, Post, Query } from '@nestjs/common';
-import { MatchMadreToVtex } from 'src/core/interactors/categories/MatchMadreToVtex';
-import { RetryMatchMadreToVtex } from 'src/core/interactors/categories/RetryMatchMadreToVtex';
+import {
+  Controller,
+  Post,
+  Query,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
+import {
+  CategoryMappingFactory,
+  MappingSource,
+} from 'src/core/interactors/categories/MatchCategories/CategoryMappingFactory';
+
+import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/oncity/categories/IOncityCategoriesRepository';
+import { ICategoriesMegatoneRepository } from 'src/core/adapters/repositories/categories/megatone/ICategoriesMegatoneRepository';
+import { IOpenAIRepository } from 'src/core/adapters/repositories/openai/IOpenAIRepository';
+import { ISqlProductsRepository } from 'src/core/adapters/repositories/products/ISqlProductsRepository';
+import { IMatchCategoriesRepository } from 'src/core/adapters/repositories/categories/IMatchCategoriesrespoitory';
 
 @Controller('api/categories')
 export class SyncCategoriesController {
   constructor(
-    private readonly matcher: MatchMadreToVtex,
-    private readonly retryMatcher: RetryMatchMadreToVtex,
+    @Inject('IOncityCategoriesRepository')
+    private readonly oncityRepo: IOncityCategoriesRepository,
+
+    @Inject('ICategoriesMegatoneRepository')
+    private readonly megatoneRepo: ICategoriesMegatoneRepository,
+
+    @Inject('IOpenAIRepository')
+    private readonly openAiRepo: IOpenAIRepository,
+
+    @Inject('ISqlProductsRepository')
+    private readonly productsRepo: ISqlProductsRepository,
+
+    @Inject('IMatchCategoriesRepository')
+    private readonly sheetRepo: IMatchCategoriesRepository,
   ) {}
 
   @Post('sync')
   async run(
-    @Query('limit') limit: number = 200,
+    @Query('source') source: string = 'oncity',
+    @Query('limit') limit: number = 50,
     @Query('offset') offset?: number,
   ) {
-    this.matcher.run(limit, offset);
+    const normalized = source.toUpperCase();
+
+    if (!Object.values(MappingSource).includes(normalized as MappingSource)) {
+      throw new BadRequestException(
+        `Invalid source. Allowed: ${Object.values(MappingSource).join(', ')}`,
+      );
+    }
+
+    const mapper = CategoryMappingFactory.create(normalized as MappingSource, {
+      oncityRepo: this.oncityRepo,
+      megatoneRepo: this.megatoneRepo,
+      openAiRepo: this.openAiRepo,
+      productsRepo: this.productsRepo,
+      sheetRepo: this.sheetRepo,
+    });
+
+    mapper.run(limit, offset);
 
     return {
       status: 'processing',
       type: 'initial_match',
+      source,
       batchSize: limit,
       offset,
-      message: 'Categorization started — check logs or Sheets.',
+      message: `Categorization started for ${source} — check logs or Sheets.`,
     };
   }
 
   @Post('sync/retry')
-  async retry(@Query('limit') limit: number = 100) {
-    await this.retryMatcher.run(limit);
+  async retry(
+    @Query('source') source: string = 'megatone',
+    @Query('limit') limit: number = 50,
+  ) {
+    const normalized = source.toUpperCase();
+
+    if (!Object.values(MappingSource).includes(normalized as MappingSource)) {
+      throw new BadRequestException(
+        `Invalid source. Allowed: ${Object.values(MappingSource).join(', ')}`,
+      );
+    }
+
+    const mapper = CategoryMappingFactory.createRetry(
+      normalized as MappingSource,
+      {
+        oncityRepo: this.oncityRepo,
+        megatoneRepo: this.megatoneRepo,
+        openAiRepo: this.openAiRepo,
+        productsRepo: this.productsRepo,
+        sheetRepo: this.sheetRepo,
+      },
+    );
+
+    mapper.run(limit);
 
     return {
       status: 'processing',
       type: 'retry_match',
-      retryBatchSize: limit,
-      message: 'Retry process started — check logs or Sheets.',
+      source,
+      batchSize: limit,
+      message: `Retry started for ${source} — check logs or Sheets.`,
     };
   }
 }

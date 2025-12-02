@@ -1,19 +1,29 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CategoriesController } from '../controller/categorias/categories.controller';
+
+import { CategoriesMadreController } from '../controller/categorias/madre/categoriesMadre.controller';
 import { SyncCategoriesController } from '../controller/categorias/sync categories/syncCategories.controller';
-import { CategoriesService } from '../services/categories/CategoriesService';
-import { SQLProductRepository } from '../drivers/repositories/SQLQuerys/SQLProductRepository';
-import { SpreadSheetReader } from '../drivers/spreadsheets/SpreadSheetReader';
+import { CategoriesMegatoneController } from '../controller/categorias/megatone/categoriesMegatone.controller';
+
+import { CategoriesMadreService } from '../services/categories/madredb/CategoriesMadreService';
+import { CategoriesMegatoneService } from '../services/categories/megatone/CategoriesMegatoneService';
+
+import { SQLProductRepository } from '../drivers/repositories/SQLQuerys/madredb/products/SQLProductRepository';
+import { SQLCategoriesMadreRepository } from '../drivers/repositories/SQLQuerys/madredb/categories/SQLCategoriesRepository';
+import { SQLCategoriesMegatoneRepository } from '../drivers/repositories/SQLQuerys/megatone/categories/SQLCategoriesMegatoneRepository';
+
 import { SheetsMatchCategoriesRepository } from '../drivers/repositories/categories/SheetsMatchCategoriesRepository';
-import { OpenaiMatchCategoriesRepository } from '../../core/drivers/repositories/openai/OpenaiMatchCategoriesReository';
-import { VtexCategoriesRepository } from '../../core/drivers/repositories/vtex/categories/VtexCategoriesRepository';
+import { SpreadSheetReader } from '../drivers/spreadsheets/SpreadSheetReader';
 import { GoogleSheetsConfigService } from '../drivers/config/GoogleSheetsConfigService';
-import { MatchMadreToVtex } from '../../core/interactors/categories/MatchMadreToVtex';
-import { RetryMatchMadreToVtex } from '../../core/interactors/categories/RetryMatchMadreToVtex';
-import { SQLCategoriesRepository } from '../drivers/repositories/SQLQuerys/SQLCategoriesRepository';
+
+import { OpenaiMatchCategoriesRepository } from '../../core/drivers/repositories/openai/OpenaiMatchCategoriesReository';
+import { OncityCategoriesRepository } from '../../core/drivers/repositories/oncity/categories/OncityCategoriesRepository';
+
 import { InMemoryCacheManager } from 'src/core/drivers/cache/InMemoryCacheManager';
+
+// 🆕 Added RetryEngine
+import { RetryCategoriesEngine } from 'src/core/interactors/categories/MatchCategories/RetryCategoriesEngine';
 
 @Module({
   imports: [
@@ -29,62 +39,54 @@ import { InMemoryCacheManager } from 'src/core/drivers/cache/InMemoryCacheManage
     }),
   ],
 
-  controllers: [SyncCategoriesController, CategoriesController],
+  controllers: [
+    SyncCategoriesController,
+    CategoriesMadreController,
+    CategoriesMegatoneController,
+  ],
 
   providers: [
-    CategoriesService,
+    CategoriesMadreService,
+    CategoriesMegatoneService,
     InMemoryCacheManager,
 
+    // Sheets config
     { provide: 'IGoogleSheetsConfig', useClass: GoogleSheetsConfigService },
     SpreadSheetReader,
 
+    // Products Repo
     { provide: 'ISqlProductsRepository', useClass: SQLProductRepository },
-    {
-      provide: 'IMatchCategoriesrespoitory',
-      useClass: SheetsMatchCategoriesRepository,
-    },
 
-    { provide: SQLCategoriesRepository, useClass: SQLProductRepository },
-    { provide: SQLCategoriesRepository, useClass: SQLCategoriesRepository },
-    {
-      provide: 'IVtexCategoriesRepository',
-      useFactory: (cache: InMemoryCacheManager) =>
-        new VtexCategoriesRepository(cache),
-      inject: [InMemoryCacheManager],
-    },
-
-    { provide: 'IOpenAIRepository', useClass: OpenaiMatchCategoriesRepository },
-
+    // Match Results Sheet Repository
     {
       provide: 'IMatchCategoriesRepository',
       useClass: SheetsMatchCategoriesRepository,
     },
+
+    // OnCity repo
     {
-      provide: MatchMadreToVtex,
-      useFactory: (vtex, openai, products, sheet) =>
-        new MatchMadreToVtex({
-          categoriesVtexRepository: vtex,
-          openAiRepository: openai,
-          productsRepository: products,
-          matchSheetRepository: sheet,
-        }),
-      inject: [
-        'IVtexCategoriesRepository',
-        'IOpenAIRepository',
-        'ISqlProductsRepository',
-        'IMatchCategoriesRepository',
-      ],
+      provide: 'IOncityCategoriesRepository',
+      useFactory: (cache: InMemoryCacheManager) =>
+        new OncityCategoriesRepository(cache),
+      inject: [InMemoryCacheManager],
     },
+
+    // Megatone
     {
-      provide: RetryMatchMadreToVtex,
-      useFactory: (sheet, openai, vtex) =>
-        new RetryMatchMadreToVtex(sheet, openai, vtex),
-      inject: [
-        'IMatchCategoriesRepository',
-        'IOpenAIRepository',
-        'IVtexCategoriesRepository',
-      ],
+      provide: 'ICategoriesMegatoneRepository',
+      useClass: SQLCategoriesMegatoneRepository,
     },
+
+    {
+      provide: 'ICategoriesMadreRepository',
+      useClass: SQLCategoriesMadreRepository,
+    },
+
+    // OpenAI
+    { provide: 'IOpenAIRepository', useClass: OpenaiMatchCategoriesRepository },
+
+    // 🆕 Retry Engine available for controller
+    RetryCategoriesEngine,
   ],
 })
 export class CategoriesModule {}

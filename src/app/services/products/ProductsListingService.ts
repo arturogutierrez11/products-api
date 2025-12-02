@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SQLProductRepository } from '../../drivers/repositories/SQLQuerys/SQLProductRepository';
+import { SQLProductRepository } from '../../drivers/repositories/SQLQuerys/madredb/products/SQLProductRepository';
 
 @Injectable()
 export class ProductsListingService {

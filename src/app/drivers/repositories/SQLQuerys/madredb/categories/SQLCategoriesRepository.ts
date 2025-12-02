@@ -1,12 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { Categories } from 'src/core/entities/Categories';
-import { ICategoriesMadreBDRepository } from '../../../../core/adapters/repositories/categories/ICategoriesMadreBDRepository';
+import { Categories } from 'src/core/entities/madredb/categories/Categories';
+import { ICategoriesMadreBDRepository } from '../../../../../../core/adapters/repositories/categories/madredb/ICategoriesMadreBDRepository';
 
 @Injectable()
-export class SQLCategoriesRepository implements ICategoriesMadreBDRepository {
-  private readonly logger = new Logger(SQLCategoriesRepository.name);
+export class SQLCategoriesMadreRepository
+  implements ICategoriesMadreBDRepository
+{
+  private readonly logger = new Logger(SQLCategoriesMadreRepository.name);
 
   constructor(
     @InjectEntityManager()
@@ -40,7 +42,8 @@ export class SQLCategoriesRepository implements ICategoriesMadreBDRepository {
       throw new Error('Database error fetching categories');
     }
   }
-  async countCategories() {
+
+  async countMadreCategories() {
     const result = await this.productosMadreEntityManager.query(
       `SELECT COUNT(DISTINCT categoria) AS total
      FROM defaultdb.productos_madre

@@ -2,6 +2,7 @@ import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { Inject, Injectable } from '@nestjs/common';
 import { IGoogleSheetsConfig } from '../../../core/adapters/config/IGoogleSheetsConfig';
+import { google } from 'googleapis';
 
 @Injectable()
 export class SpreadSheetReader {
@@ -65,7 +66,7 @@ export class SpreadSheetReader {
     return doc;
   }
 
-  private async loadWriteDocument(spreadSheetId: string) {
+  async loadWriteDocument(spreadSheetId: string) {
     const creds = this.getWriteCredentials();
 
     const SCOPES = [
@@ -183,5 +184,98 @@ export class SpreadSheetReader {
     );
 
     await sheet.addRows(formatted);
+  }
+  async getWritableSheet(spreadSheetId: string, sheetTitle: string) {
+    const doc = await this.loadWriteDocument(spreadSheetId);
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByTitle[sheetTitle];
+    if (!sheet) {
+      throw new Error(
+        `Sheet "${sheetTitle}" not found in document ${spreadSheetId}`,
+      );
+    }
+
+    return sheet;
+  }
+  async batchUpdate(spreadSheetId: string, sheetTitle: string, rows: any[]) {
+    const doc = await this.loadWriteDocument(spreadSheetId);
+    const sheet = doc.sheetsByTitle[sheetTitle];
+
+    await sheet.loadHeaderRow();
+    const headers = sheet.headerValues;
+
+    await sheet.loadCells();
+
+    for (const r of rows) {
+      const rowIndex = r._rowIndex - 1;
+      headers.forEach((h, colIndex) => {
+        const value = r[h] ?? '';
+        const cell = sheet.getCell(rowIndex, colIndex);
+        cell.value = value;
+      });
+    }
+
+    await sheet.saveUpdatedCells();
+  }
+
+  async batchUpdateValues(
+    spreadsheetId: string,
+    sheetName: string,
+    rows: any[],
+  ) {
+    const creds = this.getWriteCredentials();
+
+    const auth = new google.auth.JWT({
+      email: creds.client_email,
+      key: creds.private_key.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    // Obtener headers ordenados reales
+    const doc = await this.loadWriteDocument(spreadsheetId);
+    const sheet = doc.sheetsByTitle[sheetName];
+    await sheet.loadHeaderRow();
+    const headers = sheet.headerValues;
+
+    const CHUNK_SIZE = 800; // seguro
+
+    for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+      const chunk = rows.slice(i, i + CHUNK_SIZE);
+
+      const mappedValues = chunk.map((row) => headers.map((h) => row[h] ?? ''));
+
+      let attempt = 0;
+      const maxRetries = 5;
+
+      while (attempt < maxRetries) {
+        try {
+          await sheets.spreadsheets.values.update({
+            spreadsheetId,
+            range: `${sheetName}!A${2 + i}`,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values: mappedValues },
+          });
+
+          console.log(
+            `✔️ Chunk ${Math.ceil(i / CHUNK_SIZE) + 1} OK (${chunk.length} rows)`,
+          );
+          break;
+        } catch (err) {
+          attempt++;
+          console.log(`⚠️ Sheets FAILED attempt ${attempt}`, err.message);
+
+          if (attempt === maxRetries) throw err;
+
+          const wait = 1200 * attempt + Math.random() * 700;
+          console.log(`⏳ Retry in ${wait.toFixed(0)}ms...`);
+          await new Promise((res) => setTimeout(res, wait));
+        }
+      }
+    }
+
+    return true;
   }
 }

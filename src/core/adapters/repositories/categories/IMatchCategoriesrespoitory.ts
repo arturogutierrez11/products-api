@@ -1,6 +1,6 @@
 export interface IMatchCategoriesRepository {
-  write(rows: any[]): Promise<void>;
-  clear(): Promise<void>;
-  readAll(): Promise<any[]>;
-  applyResults(rows: any[]): Promise<void>;
+  readAll(sheetName: string): Promise<any[]>;
+  write(sheetName: string, rows: any[]): Promise<void>;
+  applyResults?(sheetName: string, rows: any[]): Promise<void>; // ← OPCIONAL
+  clear?(sheetName: string): Promise<void>; // ← OPCIONAL
 }

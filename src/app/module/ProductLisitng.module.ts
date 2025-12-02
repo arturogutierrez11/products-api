@@ -3,9 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsListingController } from '../controller/products/productsListing.controller';
 import { ProductsListingService } from '../services/products/ProductsListingService';
-import { SQLProductRepository } from '../drivers/repositories/SQLQuerys/SQLProductRepository';
-import { SQLMarketplaceRepository } from '../drivers/repositories/SQLQuerys/SQLMarketplaceRepository';
-import { SQLProductsMarketRepository } from '../drivers/repositories/SQLQuerys/SQLProductsMarketRepository';
+import { SQLProductRepository } from '../drivers/repositories/SQLQuerys/madredb/products/SQLProductRepository';
 
 @Module({
   imports: [
@@ -23,11 +21,6 @@ import { SQLProductsMarketRepository } from '../drivers/repositories/SQLQuerys/S
     }),
   ],
   controllers: [ProductsListingController],
-  providers: [
-    ProductsListingService,
-    SQLProductRepository,
-    SQLMarketplaceRepository,
-    SQLProductsMarketRepository,
-  ],
+  providers: [ProductsListingService, SQLProductRepository],
 })
 export class ProductListingModule {}
