@@ -4,3 +4,10 @@ export interface OncityCategory {
   hasChildren?: boolean;
   children?: OncityCategory[];
 }
+
+export interface OncityCategoryMatch {
+  id: number;
+  sku: string;
+  matched_category: string;
+  id_category: number;
+}

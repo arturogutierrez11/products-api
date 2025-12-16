@@ -1,8 +1,8 @@
 import {
   ICategorySourceAdapter,
-  NormalizedCategory,
+  NormalizedCategory
 } from 'src/core/adapters/repositories/categories/MatchCategoriesEngine/ICategorySourceAdapter';
-import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/oncity/categories/IOncityCategoriesRepository';
+import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/categories/oncity/IOncityCategoriesRepository';
 
 export class OncityCategorySourceAdapter implements ICategorySourceAdapter {
   constructor(private readonly oncityRepo: IOncityCategoriesRepository) {}
@@ -17,18 +17,16 @@ export class OncityCategorySourceAdapter implements ICategorySourceAdapter {
   }
 
   private flatten(tree: any[], parentPath = ''): NormalizedCategory[] {
-    return tree.flatMap((node) => {
+    return tree.flatMap(node => {
       const fullPath = parentPath ? `${parentPath} > ${node.name}` : node.name;
 
       const current: NormalizedCategory = {
         id: node.id,
         name: node.name,
-        fullPath,
+        fullPath
       };
 
-      const children = node.children?.length
-        ? this.flatten(node.children, fullPath)
-        : [];
+      const children = node.children?.length ? this.flatten(node.children, fullPath) : [];
 
       return [current, ...children];
     });

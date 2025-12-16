@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/oncity/categories/IOncityCategoriesRepository';
+import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/categories/oncity/IOncityCategoriesRepository';
 import { OncityCategory } from 'src/core/entities/oncity/categories/OncityCategory';
 import { ICacheManager } from '../../../../adapters/cache/ICacheManager';
 
@@ -28,8 +28,8 @@ export class OncityCategoriesRepository implements IOncityCategoriesRepository {
       headers: {
         'Content-Type': 'application/json',
         'X-VTEX-API-AppKey': this.appKey,
-        'X-VTEX-API-AppToken': this.appToken,
-      },
+        'X-VTEX-API-AppToken': this.appToken
+      }
     });
 
     const cleaned = this.cleanTree(data);
@@ -42,11 +42,11 @@ export class OncityCategoriesRepository implements IOncityCategoriesRepository {
   }
 
   private cleanTree(nodes: any[]): OncityCategory[] {
-    return nodes.map((node) => ({
+    return nodes.map(node => ({
       id: node.id,
       name: node.name,
       hasChildren: node.hasChildren,
-      children: node.children?.length ? this.cleanTree(node.children) : [],
+      children: node.children?.length ? this.cleanTree(node.children) : []
     }));
   }
 }

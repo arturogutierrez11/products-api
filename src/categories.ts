@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { CategoriesModule } from './app/module/Categories.module';
+import { setupSwagger } from './common/swagger/swagger.setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(CategoriesModule);
   app.enableCors();
 
-  await app.listen(3300, '0.0.0.0');
+  setupSwagger(app, 'Categories API', 'Clasificación y matching de categorías', ['categories']);
 
-  console.log('Categories classification service running on port 3300');
+  await app.listen(3300, '0.0.0.0');
 }
 bootstrap();

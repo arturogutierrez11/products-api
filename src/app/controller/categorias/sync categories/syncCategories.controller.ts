@@ -1,29 +1,25 @@
-import {
-  Controller,
-  Post,
-  Query,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Controller, Post, Query, BadRequestException, Inject } from '@nestjs/common';
 import {
   CategoryMappingFactory,
-  MappingSource,
+  MappingSource
 } from 'src/core/interactors/categories/MatchCategories/CategoryMappingFactory';
 
-import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/oncity/categories/IOncityCategoriesRepository';
-import { ICategoriesMegatoneRepository } from 'src/core/adapters/repositories/categories/megatone/ICategoriesMegatoneRepository';
+import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/categories/oncity/IOncityCategoriesRepository';
+import { IMegatoneMatchCategoriesRepository } from 'src/core/adapters/repositories/categories/megatone/IMegatoneMatchCategoriesRepository';
 import { IOpenAIRepository } from 'src/core/adapters/repositories/openai/IOpenAIRepository';
 import { ISqlProductsRepository } from 'src/core/adapters/repositories/products/ISqlProductsRepository';
 import { IMatchCategoriesRepository } from 'src/core/adapters/repositories/categories/IMatchCategoriesrespoitory';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('categories')
 @Controller('api/categories')
 export class SyncCategoriesController {
   constructor(
     @Inject('IOncityCategoriesRepository')
     private readonly oncityRepo: IOncityCategoriesRepository,
 
-    @Inject('ICategoriesMegatoneRepository')
-    private readonly megatoneRepo: ICategoriesMegatoneRepository,
+    @Inject('IMegatoneMatchCategoriesRepository')
+    private readonly megatoneRepo: IMegatoneMatchCategoriesRepository,
 
     @Inject('IOpenAIRepository')
     private readonly openAiRepo: IOpenAIRepository,
@@ -32,21 +28,19 @@ export class SyncCategoriesController {
     private readonly productsRepo: ISqlProductsRepository,
 
     @Inject('IMatchCategoriesRepository')
-    private readonly sheetRepo: IMatchCategoriesRepository,
+    private readonly sheetRepo: IMatchCategoriesRepository
   ) {}
 
   @Post('sync')
   async run(
     @Query('source') source: string = 'oncity',
     @Query('limit') limit: number = 50,
-    @Query('offset') offset?: number,
+    @Query('offset') offset?: number
   ) {
     const normalized = source.toUpperCase();
 
     if (!Object.values(MappingSource).includes(normalized as MappingSource)) {
-      throw new BadRequestException(
-        `Invalid source. Allowed: ${Object.values(MappingSource).join(', ')}`,
-      );
+      throw new BadRequestException(`Invalid source. Allowed: ${Object.values(MappingSource).join(', ')}`);
     }
 
     const mapper = CategoryMappingFactory.create(normalized as MappingSource, {
@@ -54,7 +48,7 @@ export class SyncCategoriesController {
       megatoneRepo: this.megatoneRepo,
       openAiRepo: this.openAiRepo,
       productsRepo: this.productsRepo,
-      sheetRepo: this.sheetRepo,
+      sheetRepo: this.sheetRepo
     });
 
     mapper.run(limit, offset);
@@ -65,33 +59,25 @@ export class SyncCategoriesController {
       source,
       batchSize: limit,
       offset,
-      message: `Categorization started for ${source} — check logs or Sheets.`,
+      message: `Categorization started for ${source} — check logs or Sheets.`
     };
   }
 
   @Post('sync/retry')
-  async retry(
-    @Query('source') source: string = 'megatone',
-    @Query('limit') limit: number = 50,
-  ) {
+  async retry(@Query('source') source: string = 'megatone', @Query('limit') limit: number = 50) {
     const normalized = source.toUpperCase();
 
     if (!Object.values(MappingSource).includes(normalized as MappingSource)) {
-      throw new BadRequestException(
-        `Invalid source. Allowed: ${Object.values(MappingSource).join(', ')}`,
-      );
+      throw new BadRequestException(`Invalid source. Allowed: ${Object.values(MappingSource).join(', ')}`);
     }
 
-    const mapper = CategoryMappingFactory.createRetry(
-      normalized as MappingSource,
-      {
-        oncityRepo: this.oncityRepo,
-        megatoneRepo: this.megatoneRepo,
-        openAiRepo: this.openAiRepo,
-        productsRepo: this.productsRepo,
-        sheetRepo: this.sheetRepo,
-      },
-    );
+    const mapper = CategoryMappingFactory.createRetry(normalized as MappingSource, {
+      oncityRepo: this.oncityRepo,
+      megatoneRepo: this.megatoneRepo,
+      openAiRepo: this.openAiRepo,
+      productsRepo: this.productsRepo,
+      sheetRepo: this.sheetRepo
+    });
 
     mapper.run(limit);
 
@@ -100,7 +86,7 @@ export class SyncCategoriesController {
       type: 'retry_match',
       source,
       batchSize: limit,
-      message: `Retry started for ${source} — check logs or Sheets.`,
+      message: `Retry started for ${source} — check logs or Sheets.`
     };
   }
 }

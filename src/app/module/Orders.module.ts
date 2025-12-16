@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { OrdersController } from '../controller/orders/orders.controller';
-import { OncityOrdersRepository } from 'src/core/drivers/repositories/oncity/orders/VtexOrdersRepository';
+import { OncityOrdersRepository } from 'src/core/drivers/repositories/oncity/orders/OncityOrdersRepository';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
@@ -12,10 +12,10 @@ import { OncityOrdersRepository } from 'src/core/drivers/repositories/oncity/ord
   providers: [
     {
       provide: 'IOncityOrdersRepository',
-      useClass: OncityOrdersRepository,
-    },
+      useClass: OncityOrdersRepository
+    }
   ],
 
-  exports: ['IOncityOrdersRepository'],
+  exports: ['IOncityOrdersRepository']
 })
 export class OrdersModule {}

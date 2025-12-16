@@ -1,11 +1,11 @@
 import {
   ICategorySourceAdapter,
-  NormalizedCategory,
+  NormalizedCategory
 } from 'src/core/adapters/repositories/categories/MatchCategoriesEngine/ICategorySourceAdapter';
-import { ICategoriesMegatoneRepository } from 'src/core/adapters/repositories/categories/megatone/ICategoriesMegatoneRepository';
+import { IMegatoneMatchCategoriesRepository } from 'src/core/adapters/repositories/categories/megatone/IMegatoneMatchCategoriesRepository';
 
 export class MegatoneCategorySourceAdapter implements ICategorySourceAdapter {
-  constructor(private readonly megatoneRepo: ICategoriesMegatoneRepository) {}
+  constructor(private readonly megatoneRepo: IMegatoneMatchCategoriesRepository) {}
 
   async getCategories(): Promise<NormalizedCategory[]> {
     const rows = await this.megatoneRepo.findAllCategoriesOfMegatone(0, 9999);
@@ -13,7 +13,7 @@ export class MegatoneCategorySourceAdapter implements ICategorySourceAdapter {
     return rows.map((c: any) => ({
       id: c.external_id,
       name: c.name,
-      fullPath: c.name,
+      fullPath: c.name
     }));
   }
 
