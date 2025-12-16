@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CategoriesMadreService } from 'src/app/services/categories/madredb/CategoriesMadreService';
 @ApiTags('categories')
-@Controller('/api/categories')
+@Controller('categories')
 export class CategoriesMadreController {
   constructor(private readonly categoriesMadreService: CategoriesMadreService) {}
 

@@ -12,7 +12,7 @@ import { IMatchCategoriesRepository } from 'src/core/adapters/repositories/categ
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('categories')
-@Controller('api/categories')
+@Controller('categories')
 export class SyncCategoriesController {
   constructor(
     @Inject('IOncityCategoriesRepository')

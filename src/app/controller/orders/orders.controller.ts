@@ -4,7 +4,7 @@ import { IOncityOrdersRepository } from 'src/core/adapters/repositories/orders/o
 import { OncityOrderResponse, OncityOrderDetail } from 'src/core/entities/oncity/orders/OncityOrders';
 
 @ApiTags('orders')
-@Controller('/api/orders')
+@Controller('orders')
 export class OrdersController {
   constructor(
     @Inject('IOncityOrdersRepository')

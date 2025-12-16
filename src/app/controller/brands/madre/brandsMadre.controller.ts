@@ -3,7 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { BrandMadreService } from 'src/app/services/brands/madredb/BrandsMadreService';
 
 @ApiTags('brands')
-@Controller('/api/brands')
+@Controller('brands')
 export class BrandsMadreController {
   constructor(private readonly brandsMadreService: BrandMadreService) {}
 

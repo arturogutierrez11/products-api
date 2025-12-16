@@ -3,7 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { CategoriesMegatoneService } from 'src/app/services/categories/megatone/CategoriesMegatoneService';
 
 @ApiTags('categories')
-@Controller('/api/categories')
+@Controller('categories')
 export class CategoriesMegatoneController {
   constructor(private readonly categoriesMeatoneService: CategoriesMegatoneService) {}
 

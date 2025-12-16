@@ -3,7 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { BrandMegatoneService } from 'src/app/services/brands/megatone/BrandsMegatoneService';
 
 @ApiTags('brands')
-@Controller('/api/brands')
+@Controller('brands')
 export class BrandsMegatoneController {
   constructor(private readonly brandMegatoneService: BrandMegatoneService) {}
 

@@ -4,7 +4,7 @@ import { CategoriesOncityService } from 'src/app/services/categories/oncity/Cate
 import { IOncityCategoriesRepository } from 'src/core/adapters/repositories/categories/oncity/IOncityCategoriesRepository';
 
 @ApiTags('categories')
-@Controller('/api/categories')
+@Controller('categories')
 export class CategoriesController {
   constructor(
     @Inject('IOncityCategoriesRepository')
