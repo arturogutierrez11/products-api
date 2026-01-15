@@ -28,33 +28,35 @@ export class SyncMegatoneProductsInteractor {
     let failedItems = 0;
 
     try {
-      while (hasNext) {
+      while (true) {
         const response = await this.getMegatoneProducts.execute(this.BATCH_LIMIT, offset);
 
-        if (!response.items || response.items.length === 0) {
-          break;
+        if (!response.items) {
+          throw new Error('Invalid Megatone response');
         }
 
-        const payload: BulkMarketplaceProductsDto = {
-          marketplace: 'megatone',
-          items: response.items.map(item => ({
-            externalId: String(item.publicationId),
-            sellerSku: item.sellerSku,
-            marketplaceSku: item.marketSku ?? null,
-            price: item.price,
-            stock: item.stock,
-            status: mapMegatoneStatus(item.status),
-            raw: item
-          }))
-        };
+        if (response.items.length > 0) {
+          const payload: BulkMarketplaceProductsDto = {
+            marketplace: 'megatone',
+            items: response.items.map(item => ({
+              externalId: String(item.publicationId),
+              sellerSku: item.sellerSku,
+              marketplaceSku: item.marketSku ?? null,
+              price: item.price,
+              stock: item.stock,
+              status: mapMegatoneStatus(item.status),
+              raw: item
+            }))
+          };
 
-        const success = await this.sendWithRetry(payload);
+          const success = await this.sendWithRetry(payload);
 
-        await this.syncRuns.progress(runId, {
-          batches: 1,
-          items: payload.items.length,
-          failed: success ? 0 : payload.items.length
-        });
+          await this.syncRuns.progress(runId, {
+            batches: 1,
+            items: payload.items.length,
+            failed: success ? 0 : payload.items.length
+          });
+        }
 
         if (!response.hasNext) {
           break;
