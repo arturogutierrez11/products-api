@@ -30,7 +30,10 @@ export class SyncMegatoneProductsInteractor {
     try {
       while (hasNext) {
         const response = await this.getMegatoneProducts.execute(this.BATCH_LIMIT, offset);
-        if (!response.items || response.items.length === 0) break;
+
+        if (!response.items || response.items.length === 0) {
+          break;
+        }
 
         const payload: BulkMarketplaceProductsDto = {
           marketplace: 'megatone',
@@ -45,14 +48,7 @@ export class SyncMegatoneProductsInteractor {
           }))
         };
 
-        totalBatches++;
-        totalItems += payload.items.length;
-
         const success = await this.sendWithRetry(payload);
-
-        if (!success) {
-          failedItems += payload.items.length;
-        }
 
         await this.syncRuns.progress(runId, {
           batches: 1,
@@ -60,10 +56,12 @@ export class SyncMegatoneProductsInteractor {
           failed: success ? 0 : payload.items.length
         });
 
-        hasNext = response.hasNext;
-        offset = response.nextOffset ?? 0;
-      }
+        if (!response.hasNext) {
+          break;
+        }
 
+        offset = response.nextOffset!;
+      }
       const finalStatus = failedItems > 0 ? 'PARTIAL' : 'SUCCESS';
       await this.syncRuns.finish(runId, finalStatus);
     } catch (err: any) {

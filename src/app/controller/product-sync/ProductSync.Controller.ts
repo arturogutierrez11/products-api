@@ -20,8 +20,8 @@ export class ProductSyncController {
     status: 202,
     description: 'Sincronización iniciada'
   })
-  async runMegatoneManual(): Promise<{ status: 'STARTED' }> {
-    await this.syncMegatoneProducts.execute();
+  runMegatoneManual(): { status: 'STARTED' } {
+    this.syncMegatoneProducts.execute().catch(() => {});
 
     return {
       status: 'STARTED'
@@ -41,7 +41,7 @@ export class ProductSyncController {
     status: 204,
     description: 'Sincronización disparada por cron'
   })
-  async runMegatoneCron(): Promise<void> {
-    await this.syncMegatoneProducts.execute();
+  runMegatoneCron(): void {
+    this.syncMegatoneProducts.execute().catch(() => {});
   }
 }
