@@ -1,10 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ProductListingModule } from './module/ProductLisitng.module';
-import { CategoriesModule } from './module/Categories.module';
-import { OrdersModule } from './module/Orders.module';
-import { BrandsModule } from './module/Brands.module';
 
 @Module({
-  imports: [ProductListingModule, CategoriesModule, OrdersModule, BrandsModule]
+  imports: []
 })
 export class AppModule {}
