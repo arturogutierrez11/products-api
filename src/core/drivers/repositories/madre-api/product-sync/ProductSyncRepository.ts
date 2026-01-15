@@ -1,5 +1,6 @@
+import { Injectable } from '@nestjs/common';
 import { MadreHttpClient } from '../http/MadreHttpClient';
-
+@Injectable()
 export class ProductSyncRepository {
   constructor(private readonly http: MadreHttpClient) {}
 

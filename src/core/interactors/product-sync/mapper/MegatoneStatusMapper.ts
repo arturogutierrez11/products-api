@@ -16,11 +16,9 @@ export function mapMegatoneStatus(status?: string): ProductSyncStatus {
     case 'pausado':
       return 'PAUSED';
 
-    case 'deleted':
-      return 'DELETED';
-
     case 'pendiente_activacion':
     case 'pendiente activacion':
+    case 'deleted':
       return 'DELETED';
 
     default:
