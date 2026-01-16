@@ -28,42 +28,49 @@ export class SyncMegatoneProductsInteractor {
     let failedItems = 0;
 
     try {
-      while (true) {
+      while (hasNext) {
         const response = await this.getMegatoneProducts.execute(this.BATCH_LIMIT, offset);
 
-        if (!response.items) {
+        if (!Array.isArray(response.items)) {
           throw new Error('Invalid Megatone response');
         }
 
-        if (response.items.length > 0) {
-          const payload: BulkMarketplaceProductsDto = {
-            marketplace: 'megatone',
-            items: response.items.map(item => ({
-              externalId: String(item.publicationId),
-              sellerSku: item.sellerSku,
-              marketplaceSku: item.marketSku ?? null,
-              price: item.price,
-              stock: item.stock,
-              status: mapMegatoneStatus(item.status),
-              raw: item
-            }))
-          };
-
-          const success = await this.sendWithRetry(payload);
-
-          await this.syncRuns.progress(runId, {
-            batches: 1,
-            items: payload.items.length,
-            failed: success ? 0 : payload.items.length
-          });
-        }
-
-        if (!response.hasNext) {
+        if (response.items.length === 0) {
           break;
         }
 
-        offset = response.nextOffset!;
+        const payload: BulkMarketplaceProductsDto = {
+          marketplace: 'megatone',
+          items: response.items.map(item => ({
+            externalId: String(item.publicationId),
+            sellerSku: item.sellerSku,
+            marketplaceSku: item.marketSku ?? null,
+            price: item.price,
+            stock: item.stock,
+            status: mapMegatoneStatus(item.status),
+            raw: item
+          }))
+        };
+
+        totalBatches++;
+        totalItems += payload.items.length;
+
+        const success = await this.sendWithRetry(payload);
+
+        if (!success) {
+          failedItems += payload.items.length;
+        }
+
+        await this.syncRuns.progress(runId, {
+          batches: 1,
+          items: payload.items.length,
+          failed: success ? 0 : payload.items.length
+        });
+
+        hasNext = response.hasNext === true;
+        offset = response.nextOffset ?? 0;
       }
+
       const finalStatus = failedItems > 0 ? 'PARTIAL' : 'SUCCESS';
       await this.syncRuns.finish(runId, finalStatus);
     } catch (err: any) {
@@ -72,9 +79,9 @@ export class SyncMegatoneProductsInteractor {
     }
   }
 
-  /* =====================================================
+  /* =========================
      RETRY
-  ===================================================== */
+  ========================= */
   private async sendWithRetry(payload: BulkMarketplaceProductsDto): Promise<boolean> {
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
@@ -86,7 +93,6 @@ export class SyncMegatoneProductsInteractor {
         }
       }
     }
-
     return false;
   }
 

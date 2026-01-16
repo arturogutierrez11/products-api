@@ -16,7 +16,6 @@ export function mapMegatoneStatus(status?: string): ProductSyncStatus {
       return 'PAUSED';
 
     case 'pendiente_activacion':
-    case 'deleted':
       return 'DELETED';
 
     default:
@@ -28,7 +27,7 @@ function normalizeStatus(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .normalize('NFD') // separa acentos
-    .replace(/[\u0300-\u036f]/g, '') // elimina acentos
-    .replace(/[\s-]+/g, '_'); // espacios y guiones → _
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s-]+/g, '_');
 }
