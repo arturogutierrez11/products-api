@@ -7,7 +7,7 @@ import { BulkMarketplaceProductsDto } from 'src/core/entitis/madre-api/product-s
 
 @Injectable()
 export class SyncMegatoneProductsInteractor {
-  private readonly BATCH_LIMIT = 50;
+  private readonly BATCH_LIMIT = 200;
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY_MS = 1000;
 
