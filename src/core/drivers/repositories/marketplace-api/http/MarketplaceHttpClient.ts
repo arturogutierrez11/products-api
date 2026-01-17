@@ -15,11 +15,15 @@ export class MarketplaceHttpClient {
       baseURL,
       timeout: 30000,
       headers: {
+        'Content-Type': 'application/json',
         Accept: '*/*'
       }
     });
   }
 
+  /* ======================================
+     GET
+  ====================================== */
   async get<T>(url: string, params?: any): Promise<T> {
     try {
       const response = await this.client.get<T>(url, { params });
@@ -29,6 +33,33 @@ export class MarketplaceHttpClient {
     }
   }
 
+  /* ======================================
+     POST
+  ====================================== */
+  async post<T>(url: string, body: any): Promise<T> {
+    try {
+      const response = await this.client.post<T>(url, body);
+      return response.data;
+    } catch (error) {
+      throw this.handleError('POST', url, error);
+    }
+  }
+
+  /* ======================================
+     PUT
+  ====================================== */
+  async put<T>(url: string, body: any): Promise<T> {
+    try {
+      const response = await this.client.put<T>(url, body);
+      return response.data;
+    } catch (error) {
+      throw this.handleError('PUT', url, error);
+    }
+  }
+
+  /* ======================================
+     ERROR HANDLER
+  ====================================== */
   private handleError(method: string, url: string, error: unknown): MarketplaceHttpError {
     const err = error as AxiosError;
 

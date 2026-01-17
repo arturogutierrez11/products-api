@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ProductSyncRepository } from 'src/core/drivers/repositories/madre-api/product-sync/ProductSyncRepository';
 import { SendBulkProductSyncRepository } from 'src/core/drivers/repositories/madre-api/product-sync/SendBulkProductSyncRepository';
 import { GetMegatoneProductsRepository } from 'src/core/drivers/repositories/marketplace-api/megatone/products/get/GetMegatoneProductsRepository';
 import { mapMegatoneStatus } from './mapper/MegatoneStatusMapper';
 import { BulkMarketplaceProductsDto } from 'src/core/entitis/madre-api/product-sync/dto/BulkMarketplaceProductsDto';
+import { IGetMegatoneProductsRepository } from 'src/core/adapters/repositories/marketplace/megatone/products/get/IGetMegatoneProductsRepository';
+import { ISendBulkProductSyncRepository } from 'src/core/adapters/repositories/madre/product-sync/ISendBulkProductSyncRepository';
+import { IProductSyncRepository } from 'src/core/adapters/repositories/madre/product-sync/IProductSyncRepository';
 
 @Injectable()
 export class SyncMegatoneProductsInteractor {
@@ -12,9 +15,14 @@ export class SyncMegatoneProductsInteractor {
   private readonly RETRY_DELAY_MS = 1000;
 
   constructor(
-    private readonly getMegatoneProducts: GetMegatoneProductsRepository,
-    private readonly sendBulkProductSync: SendBulkProductSyncRepository,
-    private readonly syncRuns: ProductSyncRepository
+    @Inject('IGetMegatoneProductsRepository')
+    private readonly getMegatoneProducts: IGetMegatoneProductsRepository,
+
+    @Inject('ISendBulkProductSyncRepository')
+    private readonly sendBulkProductSync: ISendBulkProductSyncRepository,
+
+    @Inject('IProductSyncRepository')
+    private readonly syncRuns: IProductSyncRepository
   ) {}
 
   async execute(): Promise<void> {
