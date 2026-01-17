@@ -18,7 +18,7 @@ export class UpdateProductSyncItemRepository implements IUpdateProductSyncItemRe
     payload: UpdateProductSyncItemPayload
   ): Promise<{ status: string; sellerSku: string }> {
     return this.httpClient.put<{ status: string; sellerSku: string }>(
-      `/internal/marketplace/products/seller/${sellerSku}`,
+      `/internal/marketplace/products/${sellerSku}`,
       payload
     );
   }
