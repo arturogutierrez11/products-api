@@ -3,9 +3,10 @@ import { IGetProductSyncItemsRepository } from 'src/core/adapters/repositories/m
 import { IUpdateProductSyncItemRepository } from 'src/core/adapters/repositories/madre/product-sync/IUpdateProductSyncItemRepository';
 import { IGetMadreProductsRepository } from 'src/core/adapters/repositories/madre/products/get/IGetMadreProductsRepository';
 import { IUpdateMegatoneProductsRepository } from 'src/core/adapters/repositories/marketplace/megatone/products/update-price-stock/IUpdateMegatoneProductsRepository';
+import { applyMegatonePromotion } from './pricing/applyMegatonePromotion';
 
 @Injectable()
-export class SyncMadreVsMarketplaceInteractor {
+export class UpdatePriceAndStock {
   private readonly LIMIT = 100;
 
   constructor(
@@ -32,7 +33,7 @@ export class SyncMadreVsMarketplaceInteractor {
     let updated = 0;
     let errors = 0;
 
-    console.log('[SYNC] Inicio sync Madre vs Marketplace');
+    console.log('[SYNC] Inicio update Price & Stock (Madre → Marketplace)');
 
     while (true) {
       console.log(`[SYNC] Leyendo sync_items | offset=${offset}`);
@@ -85,7 +86,7 @@ export class SyncMadreVsMarketplaceInteractor {
   }): Promise<boolean> {
     const sellerSku = syncItem.seller_sku;
 
-    // ⛔ FIX CLAVE: NO TOCAR NADA SI EL sync_item ESTÁ DELETED
+    /* ---------- SKIP DELETED ---------- */
     if (syncItem.status === 'DELETED') {
       console.log(`[SYNC] ⏭ Skipping DELETED sync_item | SKU=${sellerSku}`);
       return false;
@@ -95,20 +96,16 @@ export class SyncMadreVsMarketplaceInteractor {
     const madreProduct = await this.getMadreProducts.getBySku(sellerSku);
 
     if (!madreProduct) {
-      const newStatus = 'ERROR';
-
       console.log(`[SYNC] ⚠ No existe en Madre | SKU=${sellerSku}`);
 
       await this.updateSyncItem.updateBySellerSku(sellerSku, {
-        status: newStatus,
+        status: 'ERROR',
         raw: {
           source: 'madre-full-sync',
           reason: 'NOT_IN_MADRE',
           checkedAt: new Date().toISOString()
         }
       });
-
-      console.log(`[SYNC] ⚠ No existe en Madre | SKU=${sellerSku} | new status=${newStatus}`);
 
       return false;
     }
@@ -128,12 +125,26 @@ export class SyncMadreVsMarketplaceInteractor {
 
     console.log(`[SYNC] Diferencia detectada | SKU=${sellerSku} | Madre(price=${madrePrice}, stock=${madreStock})`);
 
+    /* ---------- ARMADO PAYLOAD MEGATONE ---------- */
+    let precioLista = madrePrice;
+    let precioPromocional: number | undefined;
+
+    if (priceChanged) {
+      const promo = applyMegatonePromotion(madrePrice);
+
+      precioLista = promo.precioLista;
+      precioPromocional = promo.precioPromocional;
+
+      console.log(`[SYNC] Promo aplicada | SKU=${sellerSku} | lista=${precioLista} promo=${precioPromocional}`);
+    }
+
     /* ---------- MARKETPLACE (Megatone) ---------- */
     await this.updateMegatone.update({
       items: [
         {
           publicationId: Number(syncItem.external_id),
-          precioLista: madrePrice,
+          precioLista,
+          precioPromocional,
           stock: madreStock,
           alicuotaIva: 21,
           alicuotaImpuestoInterno: 0
@@ -141,13 +152,14 @@ export class SyncMadreVsMarketplaceInteractor {
       ]
     });
 
-    /* ---------- MADRE (sync_item → genera history) ---------- */
+    /* ---------- SYNC ITEM ---------- */
     await this.updateSyncItem.updateBySellerSku(sellerSku, {
       price: madrePrice,
       stock: madreStock,
       raw: {
         source: 'madre-full-sync',
-        madreUpdatedAt: madreProduct.updatedAt
+        madreUpdatedAt: madreProduct.updatedAt,
+        promoApplied: priceChanged ? '3%' : null
       }
     });
 

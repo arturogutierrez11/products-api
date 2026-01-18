@@ -1,13 +1,13 @@
 import { Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { SyncMadreVsMarketplaceService } from 'src/app/services/product-sync/SyncMadreVsMarketplaceService';
+import { UpdatePriceAndStockService } from 'src/app/services/update-price-stock/UpdatePriceAndStockService';
 
 @ApiTags('Product Sync · Madre vs Marketplace')
 @Controller('internal/product-sync')
 export class SyncMadreVsMarketplaceController {
-  constructor(private readonly service: SyncMadreVsMarketplaceService) {}
+  constructor(private readonly service: UpdatePriceAndStockService) {}
 
-  @Post('madre-vs-marketplace')
+  @Post('update')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
     summary: 'Sincronización FULL Madre → Marketplace',

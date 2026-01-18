@@ -1,8 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ProductSyncRepository } from 'src/core/drivers/repositories/madre-api/product-sync/ProductSyncRepository';
-import { SendBulkProductSyncRepository } from 'src/core/drivers/repositories/madre-api/product-sync/SendBulkProductSyncRepository';
-import { GetMegatoneProductsRepository } from 'src/core/drivers/repositories/marketplace-api/megatone/products/get/GetMegatoneProductsRepository';
-import { mapMegatoneStatus } from './mapper/MegatoneStatusMapper';
+import { mapMegatoneStatus } from '../update-price-stock/mapper/MegatoneStatusMapper';
 import { BulkMarketplaceProductsDto } from 'src/core/entitis/madre-api/product-sync/dto/BulkMarketplaceProductsDto';
 import { IGetMegatoneProductsRepository } from 'src/core/adapters/repositories/marketplace/megatone/products/get/IGetMegatoneProductsRepository';
 import { ISendBulkProductSyncRepository } from 'src/core/adapters/repositories/madre/product-sync/ISendBulkProductSyncRepository';

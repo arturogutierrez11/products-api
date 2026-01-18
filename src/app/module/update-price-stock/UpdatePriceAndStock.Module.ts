@@ -1,34 +1,23 @@
 import { Module } from '@nestjs/common';
-import { SyncMegatoneProductsInteractor } from 'src/core/interactors/product-sync/SyncMegatoneProductsInteractor';
-import { ProductSyncController } from 'src/app/controller/product-sync/ProductSync.Controller';
+import { SyncMadreVsMarketplaceController } from 'src/app/controller/product-sync/SyncMadreVsMarketplace.Controller';
+import { UpdatePriceAndStockService } from 'src/app/services/update-price-stock/UpdatePriceAndStockService';
+import { UpdatePriceAndStock } from 'src/core/interactors/update-price-stock/UpdatePriceAndStock';
 import { MarketplaceHttpClient } from 'src/core/drivers/repositories/marketplace-api/http/MarketplaceHttpClient';
 import { MadreHttpClient } from 'src/core/drivers/repositories/madre-api/http/MadreHttpClient';
-import { GetMegatoneProductsRepository } from 'src/core/drivers/repositories/marketplace-api/megatone/products/get/GetMegatoneProductsRepository';
-import { SendBulkProductSyncRepository } from 'src/core/drivers/repositories/madre-api/product-sync/SendBulkProductSyncRepository';
-import { ProductSyncRepository } from 'src/core/drivers/repositories/madre-api/product-sync/ProductSyncRepository';
 import { GetProductSyncItemsRepository } from 'src/core/drivers/repositories/madre-api/product-sync/GetProductSyncItemsRepository';
 import { UpdateProductSyncItemRepository } from 'src/core/drivers/repositories/madre-api/product-sync/UpdateProductSyncItemRepository';
 import { GetMadreProductsRepository } from 'src/core/drivers/repositories/madre-api/products/get/GetMadreProductsRepository';
 import { UpdateMegatoneProductsRepository } from 'src/core/drivers/repositories/marketplace-api/megatone/products/update-price-stock/UpdateMegatoneProductsRepository';
 
 @Module({
-  controllers: [ProductSyncController],
+  controllers: [SyncMadreVsMarketplaceController],
   providers: [
+    UpdatePriceAndStockService,
+    UpdatePriceAndStock,
+
     MarketplaceHttpClient,
     MadreHttpClient,
 
-    {
-      provide: 'IGetMegatoneProductsRepository',
-      useClass: GetMegatoneProductsRepository
-    },
-    {
-      provide: 'ISendBulkProductSyncRepository',
-      useClass: SendBulkProductSyncRepository
-    },
-    {
-      provide: 'IProductSyncRepository',
-      useClass: ProductSyncRepository
-    },
     {
       provide: 'IGetProductSyncItemsRepository',
       useClass: GetProductSyncItemsRepository
@@ -44,10 +33,7 @@ import { UpdateMegatoneProductsRepository } from 'src/core/drivers/repositories/
     {
       provide: 'IUpdateMegatoneProductsRepository',
       useClass: UpdateMegatoneProductsRepository
-    },
-
-    SyncMegatoneProductsInteractor
-  ],
-  exports: [SyncMegatoneProductsInteractor]
+    }
+  ]
 })
-export class ProductSyncModule {}
+export class UpdatePriceAndStockModule {}
