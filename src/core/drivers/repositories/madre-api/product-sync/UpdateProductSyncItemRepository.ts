@@ -5,7 +5,7 @@ import { IUpdateProductSyncItemRepository } from 'src/core/adapters/repositories
 export interface UpdateProductSyncItemPayload {
   price?: number;
   stock?: number;
-  status?: 'ACTIVE' | 'PAUSED' | 'PENDING' | 'DELETED';
+  status?: 'ACTIVE' | 'PAUSED' | 'PENDING' | 'DELETED' | 'ERROR';
   raw?: Record<string, any>;
 }
 

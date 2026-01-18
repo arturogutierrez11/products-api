@@ -89,6 +89,16 @@ export class SyncMadreVsMarketplaceInteractor {
 
     if (!madreProduct) {
       console.log(`[SYNC] ⚠ No existe en Madre | SKU=${sellerSku}`);
+
+      await this.updateSyncItem.updateBySellerSku(sellerSku, {
+        status: 'DELETED',
+        raw: {
+          source: 'madre-full-sync',
+          reason: 'NOT_IN_MADRE',
+          checkedAt: new Date().toISOString()
+        }
+      });
+
       return false;
     }
 
