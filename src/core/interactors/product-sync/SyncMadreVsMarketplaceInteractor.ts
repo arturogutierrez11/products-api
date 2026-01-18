@@ -91,7 +91,7 @@ export class SyncMadreVsMarketplaceInteractor {
       console.log(`[SYNC] ⚠ No existe en Madre | SKU=${sellerSku}`);
 
       await this.updateSyncItem.updateBySellerSku(sellerSku, {
-        status: 'DELETED',
+        status: 'ERROR',
         raw: {
           source: 'madre-full-sync',
           reason: 'NOT_IN_MADRE',
