@@ -88,16 +88,20 @@ export class SyncMadreVsMarketplaceInteractor {
     const madreProduct = await this.getMadreProducts.getBySku(sellerSku);
 
     if (!madreProduct) {
+      const newStatus = 'ERROR';
+
       console.log(`[SYNC] ⚠ No existe en Madre | SKU=${sellerSku}`);
 
       await this.updateSyncItem.updateBySellerSku(sellerSku, {
-        status: 'ERROR',
+        status: newStatus,
         raw: {
           source: 'madre-full-sync',
           reason: 'NOT_IN_MADRE',
           checkedAt: new Date().toISOString()
         }
       });
+
+      console.log(`[SYNC] ⚠ No existe en Madre | SKU=${sellerSku} | new status=${newStatus}`);
 
       return false;
     }
