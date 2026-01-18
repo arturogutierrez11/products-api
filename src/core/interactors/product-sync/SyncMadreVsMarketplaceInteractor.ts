@@ -81,8 +81,15 @@ export class SyncMadreVsMarketplaceInteractor {
     external_id: string;
     price: number;
     stock: number;
+    status: string;
   }): Promise<boolean> {
     const sellerSku = syncItem.seller_sku;
+
+    // ⛔ FIX CLAVE: NO TOCAR NADA SI EL sync_item ESTÁ DELETED
+    if (syncItem.status === 'DELETED') {
+      console.log(`[SYNC] ⏭ Skipping DELETED sync_item | SKU=${sellerSku}`);
+      return false;
+    }
 
     /* ---------- MADRE ---------- */
     const madreProduct = await this.getMadreProducts.getBySku(sellerSku);
@@ -109,8 +116,11 @@ export class SyncMadreVsMarketplaceInteractor {
     const madrePrice = Number(madreProduct.price);
     const madreStock = Number(madreProduct.stock);
 
-    const priceChanged = madrePrice !== Number(syncItem.price);
-    const stockChanged = madreStock !== Number(syncItem.stock);
+    const syncPrice = Number(syncItem.price);
+    const syncStock = Number(syncItem.stock);
+
+    const priceChanged = madrePrice !== syncPrice;
+    const stockChanged = madreStock !== syncStock;
 
     if (!priceChanged && !stockChanged) {
       return false;
