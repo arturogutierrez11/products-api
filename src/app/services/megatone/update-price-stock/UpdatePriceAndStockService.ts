@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UpdatePriceAndStock } from 'src/core/interactors/update-price-stock/UpdatePriceAndStock';
+import { UpdatePriceAndStock } from 'src/core/interactors/megatone/update-price-stock/UpdatePriceAndStock';
 
 @Injectable()
 export class UpdatePriceAndStockService {

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { SyncMegatoneProductsInteractor } from 'src/core/interactors/product-sync/SyncMegatoneProductsInteractor';
-import { ProductSyncController } from 'src/app/controller/product-sync/ProductSync.Controller';
+import { SyncMegatoneProductsInteractor } from 'src/core/interactors/megatone/product-sync/SyncMegatoneProductsInteractor';
+import { ProductSyncController } from 'src/app/controller/megatone/product-sync/ProductSync.Controller';
 import { MarketplaceHttpClient } from 'src/core/drivers/repositories/marketplace-api/http/MarketplaceHttpClient';
 import { MadreHttpClient } from 'src/core/drivers/repositories/madre-api/http/MadreHttpClient';
 import { GetMegatoneProductsRepository } from 'src/core/drivers/repositories/marketplace-api/megatone/products/get/GetMegatoneProductsRepository';

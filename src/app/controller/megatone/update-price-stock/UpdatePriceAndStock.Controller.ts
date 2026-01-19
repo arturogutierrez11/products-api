@@ -1,16 +1,17 @@
 import { Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { UpdatePriceAndStockService } from 'src/app/services/update-price-stock/UpdatePriceAndStockService';
+import { UpdatePriceAndStockService } from 'src/app/services/megatone/update-price-stock/UpdatePriceAndStockService';
 
-@ApiTags('Product Sync · Madre vs Marketplace')
+@ApiTags('Megatone')
 @Controller('internal/product-sync')
-export class SyncMadreVsMarketplaceController {
+export class UpdatePriceAndStockController {
   constructor(private readonly service: UpdatePriceAndStockService) {}
 
   @Post('update')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
-    summary: 'Sincronización FULL Madre → Marketplace',
+    summary:
+      'Sincronización de productos Madre vs Sync_items. Compara, encuentra diferencia y modifica precio y stock entre Megatone - Sync_items - Madre',
     description:
       'Compara productos existentes en product_sync_items contra Madre. ' +
       'Si detecta diferencias de precio o stock, actualiza Megatone y ' +

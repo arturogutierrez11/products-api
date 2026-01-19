@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ProductSyncModule } from './module/product-sync/ProductSync.Module';
-import { UpdatePriceAndStockModule } from './module/update-price-stock/UpdatePriceAndStock.Module';
+import { ProductSyncModule } from './module/megatone/product-sync/ProductSync.Module';
+import { UpdatePriceAndStockModule } from './module/megatone/update-price-stock/UpdatePriceAndStock.Module';
+import { UpdateStatusModule } from './module/megatone/update-status/UpdateStatus.Module';
 
 @Module({
   imports: [
@@ -9,7 +10,8 @@ import { UpdatePriceAndStockModule } from './module/update-price-stock/UpdatePri
       isGlobal: true
     }),
     ProductSyncModule,
-    UpdatePriceAndStockModule
+    UpdatePriceAndStockModule,
+    UpdateStatusModule
   ]
 })
 export class AppModule {}

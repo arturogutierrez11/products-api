@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { SyncMadreVsMarketplaceController } from 'src/app/controller/product-sync/SyncMadreVsMarketplace.Controller';
-import { UpdatePriceAndStockService } from 'src/app/services/update-price-stock/UpdatePriceAndStockService';
-import { UpdatePriceAndStock } from 'src/core/interactors/update-price-stock/UpdatePriceAndStock';
+import { UpdatePriceAndStockController } from 'src/app/controller/megatone/update-price-stock/UpdatePriceAndStock.Controller';
+import { UpdatePriceAndStockService } from 'src/app/services/megatone/update-price-stock/UpdatePriceAndStockService';
+import { UpdatePriceAndStock } from 'src/core/interactors/megatone/update-price-stock/UpdatePriceAndStock';
 import { MarketplaceHttpClient } from 'src/core/drivers/repositories/marketplace-api/http/MarketplaceHttpClient';
 import { MadreHttpClient } from 'src/core/drivers/repositories/madre-api/http/MadreHttpClient';
 import { GetProductSyncItemsRepository } from 'src/core/drivers/repositories/madre-api/product-sync/GetProductSyncItemsRepository';
@@ -10,7 +10,7 @@ import { GetMadreProductsRepository } from 'src/core/drivers/repositories/madre-
 import { UpdateMegatoneProductsRepository } from 'src/core/drivers/repositories/marketplace-api/megatone/products/update-price-stock/UpdateMegatoneProductsRepository';
 
 @Module({
-  controllers: [SyncMadreVsMarketplaceController],
+  controllers: [UpdatePriceAndStockController],
   providers: [
     UpdatePriceAndStockService,
     UpdatePriceAndStock,

@@ -1,20 +1,16 @@
 import { Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SyncMegatoneProductsInteractor } from 'src/core/interactors/megatone/product-sync/SyncMegatoneProductsInteractor';
 
-import { SyncMegatoneProductsInteractor } from 'src/core/interactors/product-sync/SyncMegatoneProductsInteractor';
-
-@ApiTags('internal-product-sync')
+@ApiTags('Megatone')
 @Controller('internal/product-sync')
 export class ProductSyncController {
   constructor(private readonly syncMegatoneProducts: SyncMegatoneProductsInteractor) {}
 
-  /* =====================================================
-     EJECUCIÓN MANUAL (Swagger / Postman)
-  ===================================================== */
   @Post('megatone/run')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
-    summary: 'Ejecutar sincronización de productos Megatone (manual)'
+    summary: 'Ejecutar sincronización de productos desde Megatone hacia sync_items'
   })
   @ApiResponse({
     status: 202,
@@ -28,14 +24,9 @@ export class ProductSyncController {
     };
   }
 
-  /* =====================================================
-     EJECUCIÓN POR CRON
-     (GitHub Actions / Cloud Scheduler / k8s cronjob)
-  ===================================================== */
-  @Post('megatone/cron')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Ejecutar sincronización de productos Megatone (cron)'
+    summary: 'Ejecutar sincronización de productos Megatone (cron) Proceso automatico '
   })
   @ApiResponse({
     status: 204,
