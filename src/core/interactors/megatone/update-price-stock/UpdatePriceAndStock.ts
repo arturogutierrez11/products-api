@@ -36,8 +36,6 @@ export class UpdatePriceAndStock {
     console.log('[SYNC] Inicio update Price & Stock (Madre → Marketplace)');
 
     while (true) {
-      console.log(`[SYNC] Leyendo sync_items | offset=${offset}`);
-
       const page = await this.getSyncItems.listAll('megatone', this.LIMIT, offset);
 
       if (!page.items.length) {
@@ -125,13 +123,12 @@ export class UpdatePriceAndStock {
 
     console.log(`[SYNC] Diferencia detectada | SKU=${sellerSku} | Madre(price=${madrePrice}, stock=${madreStock})`);
 
-    /* ---------- ARMADO PAYLOAD MEGATONE ---------- */
+    /* ---------- ARMADO PRECIOS ---------- */
     let precioLista = madrePrice;
     let precioPromocional: number | undefined;
 
     if (priceChanged) {
       const promo = applyMegatonePromotion(madrePrice);
-
       precioLista = promo.precioLista;
       precioPromocional = promo.precioPromocional;
 
@@ -152,8 +149,17 @@ export class UpdatePriceAndStock {
       ]
     });
 
+    if (madreStock === 0) {
+      console.log(`[SYNC] Auto-pause aplicado por stock 0 | SKU=${sellerSku}`);
+    }
+
     /* ---------- SYNC ITEM ---------- */
-    await this.updateSyncItem.updateBySellerSku(sellerSku, {
+    const payload: {
+      price: number;
+      stock: number;
+      status?: 'PAUSED';
+      raw: Record<string, any>;
+    } = {
       price: madrePrice,
       stock: madreStock,
       raw: {
@@ -161,7 +167,17 @@ export class UpdatePriceAndStock {
         madreUpdatedAt: madreProduct.updatedAt,
         promoApplied: priceChanged ? '3%' : null
       }
-    });
+    };
+
+    if (madreStock === 0) {
+      payload.status = 'PAUSED';
+
+      payload.raw.autoPausedByStock = true;
+
+      console.log(`[SYNC] Auto-pause aplicado por stock 0 | SKU=${sellerSku}`);
+    }
+
+    await this.updateSyncItem.updateBySellerSku(sellerSku, payload);
 
     return true;
   }
