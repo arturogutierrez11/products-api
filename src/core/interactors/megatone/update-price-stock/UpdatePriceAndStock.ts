@@ -38,7 +38,7 @@ export class UpdatePriceAndStock {
     while (true) {
       console.log(`[SYNC] Leyendo sync_items | offset=${offset}`);
 
-      const page = await this.getSyncItems.listAll(this.LIMIT, offset);
+      const page = await this.getSyncItems.listAll('megatone', this.LIMIT, offset);
 
       if (!page.items.length) {
         console.log('[SYNC] No hay más items para procesar');

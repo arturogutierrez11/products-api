@@ -26,8 +26,9 @@ export interface PaginatedSyncItemsResponse {
 export class GetProductSyncItemsRepository implements IGetProductSyncItemsRepository {
   constructor(private readonly httpClient: MadreHttpClient) {}
 
-  async listAll(limit = 100, offset = 0): Promise<PaginatedSyncItemsResponse> {
+  async listAll(marketplace: string, limit = 100, offset = 0): Promise<PaginatedSyncItemsResponse> {
     return this.httpClient.get<PaginatedSyncItemsResponse>('/internal/marketplace/products/items/all', {
+      marketplace,
       limit,
       offset
     });

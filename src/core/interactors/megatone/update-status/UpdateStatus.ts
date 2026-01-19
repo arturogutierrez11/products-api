@@ -39,7 +39,7 @@ export class UpdateStatus {
     const nextSyncStatus = mode === 'ACTIVATE' ? 'ACTIVE' : 'PAUSED';
 
     while (true) {
-      const page = await this.getSyncItems.listAll(this.LIMIT, offset);
+      const page = await this.getSyncItems.listAll('megatone', this.LIMIT, offset);
 
       if (!page.items.length) break;
 
