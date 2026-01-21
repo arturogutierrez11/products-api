@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ProductSyncModule } from './module/megatone/product-sync/ProductSync.Module';
 import { UpdatePriceAndStockModule } from './module/megatone/update-price-stock/UpdatePriceAndStock.Module';
 import { UpdateStatusModule } from './module/megatone/update-status/UpdateStatus.Module';
+import { SyncStatusModule } from './module/megatone/update-status/SyncStatus.Module';
 
 @Module({
   imports: [
@@ -11,7 +12,8 @@ import { UpdateStatusModule } from './module/megatone/update-status/UpdateStatus
     }),
     ProductSyncModule,
     UpdatePriceAndStockModule,
-    UpdateStatusModule
+    UpdateStatusModule,
+    SyncStatusModule
   ]
 })
 export class AppModule {}
